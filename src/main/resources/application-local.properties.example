@@ -1,0 +1,17 @@
+# ----------------------------------------------------------------------------
+# 로컬 개발용 DB 접속 설정 템플릿
+#
+# 사용법
+#   1. 이 파일을 같은 폴더에 application-local.properties 라는 이름으로 복사
+#   2. 아래 url / username / password 를 본인 환경에 맞게 수정
+#
+# url 은 VMware IP 참고해서 적기!
+#   ex) jdbc:mariadb://<VM_IP>:3306/deundeun
+#
+# application-local.properties 는 .gitignore 에 등록되어 있어 커밋되지 않음!
+# 비밀번호를 이 .example 파일에 적으면 안됩니다.
+# ----------------------------------------------------------------------------
+
+spring.datasource.url=jdbc:mariadb://localhost:3306/deundeun
+spring.datasource.username=deundeun
+spring.datasource.password=

@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### 로컬 전용 설정 (DB 계정 등) ###
+application-local.properties
+!application-local.properties.example
