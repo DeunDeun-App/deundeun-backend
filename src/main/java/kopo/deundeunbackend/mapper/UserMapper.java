@@ -34,4 +34,8 @@ public interface UserMapper {
     int updatePassword(@Param("email") String email,
                        @Param("pwHash") String pwHash,
                        @Param("pwSalt") String pwSalt);
+
+    int updatePasswordByUserId(@Param("userId") Long userId,
+                               @Param("pwHash") String pwHash,
+                               @Param("pwSalt") String pwSalt);
 }

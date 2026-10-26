@@ -48,4 +48,12 @@
          WHERE email = #{email}
     </update>
 
+    <update id="updatePasswordByUserId">
+        UPDATE users
+           SET pw_hash = #{pwHash}
+             , pw_salt = #{pwSalt}
+             , updated_at = NOW()
+         WHERE user_id = #{userId}
+    </update>
+
 </mapper>

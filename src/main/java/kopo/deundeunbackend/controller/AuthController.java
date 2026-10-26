@@ -1,8 +1,13 @@
 package kopo.deundeunbackend.controller;
 
 import kopo.deundeunbackend.common.response.ApiResponse;
+import kopo.deundeunbackend.dto.request.EmailCodeRequest;
+import kopo.deundeunbackend.dto.request.EmailVerifyRequest;
+import kopo.deundeunbackend.dto.request.FindEmailRequest;
 import kopo.deundeunbackend.dto.request.LoginRequest;
+import kopo.deundeunbackend.dto.request.SignUpRequest;
 import kopo.deundeunbackend.dto.response.LoginResponse;
+import kopo.deundeunbackend.dto.response.SignUpResponse;
 import kopo.deundeunbackend.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,5 +37,37 @@ public class AuthController {
         LoginResponse response = authService.login(request);
 
         return ApiResponse.ok("로그인 되었습니다.", response);
+    }
+
+    @PostMapping("/signup/email-code")
+    public ApiResponse<Void> sendSignUpCode(@RequestBody EmailCodeRequest request) {
+
+        authService.sendSignUpCode(request);
+
+        return ApiResponse.ok("인증번호를 보냈어요. 메일함을 확인해 주세요.", null);
+    }
+
+    @PostMapping("/signup/email-verify")
+    public ApiResponse<Void> verifySignUpCode(@RequestBody EmailVerifyRequest request) {
+
+        authService.verifySignUpCode(request);
+
+        return ApiResponse.ok("인증이 완료되었습니다.", null);
+    }
+
+    @PostMapping("/signup")
+    public ApiResponse<SignUpResponse> signUp(@RequestBody SignUpRequest request) {
+
+        SignUpResponse response = authService.signUp(request);
+
+        return ApiResponse.ok("회원가입이 완료되었습니다.", response);
+    }
+
+    @PostMapping("/find-email")
+    public ApiResponse<Void> findEmail(@RequestBody FindEmailRequest request) {
+
+        authService.findEmail(request);
+
+        return ApiResponse.ok("일치하는 이메일이 확인되었습니다.", null);
     }
 }

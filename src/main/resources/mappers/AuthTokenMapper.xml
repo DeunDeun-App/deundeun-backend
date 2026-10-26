@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.deundeunbackend.mapper.AuthTokenMapper">
+
+    <insert id="insertToken" useGeneratedKeys="true" keyProperty="token.tokenId">
+        INSERT INTO auth_tokens (
+            user_id
+          , token_type
+          , token_value
+          , expires_at
+        ) VALUES (
+            #{token.userId}
+          , #{token.tokenType}
+          , #{token.tokenValue}
+          , NOW() + INTERVAL #{validMinutes} MINUTE
+        )
+    </insert>
+
+    <select id="selectUsableToken" resultType="AuthToken">
+        SELECT token_id
+             , user_id
+             , token_type
+             , token_value
+             , expires_at
+             , used_at
+             , created_at
+          FROM auth_tokens
+         WHERE token_value = #{tokenValue}
+           AND token_type = #{tokenType}
+           AND used_at IS NULL
+           AND expires_at &gt; NOW()
+    </select>
+
+    <update id="markUsed">
+        UPDATE auth_tokens
+           SET used_at = NOW()
+         WHERE token_id = #{tokenId}
+           AND used_at IS NULL
+    </update>
+
+</mapper>

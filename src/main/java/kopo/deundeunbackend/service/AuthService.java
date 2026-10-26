@@ -1,13 +1,21 @@
 package kopo.deundeunbackend.service;
 
 import kopo.deundeunbackend.common.exception.ApiException;
+import kopo.deundeunbackend.common.utils.InputValidator;
 import kopo.deundeunbackend.common.utils.PasswordUtil;
 import kopo.deundeunbackend.domain.User;
+import kopo.deundeunbackend.dto.request.EmailCodeRequest;
+import kopo.deundeunbackend.dto.request.EmailVerifyRequest;
+import kopo.deundeunbackend.dto.request.FindEmailRequest;
 import kopo.deundeunbackend.dto.request.LoginRequest;
+import kopo.deundeunbackend.dto.request.SignUpRequest;
 import kopo.deundeunbackend.dto.response.LoginResponse;
+import kopo.deundeunbackend.dto.response.SignUpResponse;
 import kopo.deundeunbackend.mapper.UserMapper;
+import kopo.deundeunbackend.service.EmailVerificationService.Purpose;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 /** 인증 관련 업무 로직. */
@@ -18,6 +26,8 @@ public class AuthService {
 
     private final UserMapper userMapper;
 
+    private final EmailVerificationService emailVerificationService;
+
     /**
      * 이메일과 비밀번호로 로그인
      *
@@ -27,7 +37,7 @@ public class AuthService {
      */
     public LoginResponse login(LoginRequest request) {
 
-        String email = request == null ? null : trimToNull(request.email());
+        String email = request == null ? null : InputValidator.trimToNull(request.email());
         String password = request == null ? null : request.password();
 
         if (email == null) {
@@ -49,12 +59,67 @@ public class AuthService {
         return LoginResponse.from(user);
     }
 
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
+    public void sendSignUpCode(EmailCodeRequest request) {
+        String email = InputValidator.requireEmail(request == null ? null : request.email());
 
-        return trimmed.isEmpty() ? null : trimmed;
+        if (userMapper.selectByEmail(email) != null) {
+            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입된 이메일입니다.");
+        }
+
+        emailVerificationService.sendCode(Purpose.SIGNUP, email);
+    }
+
+    public void verifySignUpCode(EmailVerifyRequest request) {
+        String email = InputValidator.requireEmail(request == null ? null : request.email());
+        String code = InputValidator.requireCode(request.code());
+
+        emailVerificationService.verify(Purpose.SIGNUP, email, code);
+    }
+
+    public SignUpResponse signUp(SignUpRequest request) {
+        if (request == null) {
+            throw ApiException.badRequest("INVALID_REQUEST", "요청 형식이 올바르지 않습니다.");
+        }
+
+        String name = InputValidator.requireName(request.name());
+        String email = InputValidator.requireEmail(request.email());
+        String password = InputValidator.requirePassword(request.password());
+
+        emailVerificationService.requireVerified(Purpose.SIGNUP, email);
+
+        if (userMapper.selectByEmail(email) != null) {
+            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입된 이메일입니다.");
+        }
+
+        String salt = PasswordUtil.newSalt();
+        User user = User.builder()
+                .email(email)
+                .pwSalt(salt)
+                .pwHash(PasswordUtil.hash(password, salt))
+                .userName(name)
+                .build();
+
+        try {
+            userMapper.insertUser(user);
+
+        } catch (DuplicateKeyException e) {
+            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입된 이메일입니다.");
+        }
+
+        emailVerificationService.consume(Purpose.SIGNUP, email);
+        log.info("회원가입 완료: userId={}", user.getUserId());
+
+        return SignUpResponse.from(user);
+    }
+
+    public void findEmail(FindEmailRequest request) {
+        String name = InputValidator.requireName(request == null ? null : request.name());
+        String email = InputValidator.requireEmail(request.email());
+
+        User user = userMapper.selectByEmail(email);
+
+        if (user == null || !name.equals(user.getUserName())) {
+            throw ApiException.notFound("EMAIL_NOT_FOUND", "일치하는 이메일이 없습니다.");
+        }
     }
 }
