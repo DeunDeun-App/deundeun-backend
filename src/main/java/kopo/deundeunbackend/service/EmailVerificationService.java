@@ -15,7 +15,13 @@ import org.springframework.stereotype.Service;
 public class EmailVerificationService {
 
     public enum Purpose {
-        SIGNUP, PASSWORD_RESET
+        SIGNUP("회원가입"), PASSWORD_RESET("비밀번호 찾기");
+
+        private final String displayName;
+
+        Purpose(String displayName) {
+            this.displayName = displayName;
+        }
     }
 
     private static final Duration CODE_TTL = Duration.ofMinutes(5);
@@ -33,7 +39,7 @@ public class EmailVerificationService {
 
         verifications.put(key(purpose, email),
                 new Verification(code, Instant.now().plus(CODE_TTL), false, 0));
-        mailService.sendVerificationCode(email, code);
+        mailService.sendVerificationCode(email, code, purpose.displayName);
     }
 
     public void verify(Purpose purpose, String email, String code) {

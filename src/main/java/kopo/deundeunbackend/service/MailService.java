@@ -23,7 +23,7 @@ public class MailService {
     @Value("${deundeun.mail.from:}")
     private String from;
 
-    public void sendVerificationCode(String to, String code) {
+    public void sendVerificationCode(String to, String code, String purposeName) {
         JavaMailSender mailSender = enabled ? mailSenderProvider.getIfAvailable() : null;
 
         if (mailSender == null) {
@@ -36,8 +36,8 @@ public class MailService {
             message.setFrom(from);
         }
         message.setTo(to);
-        message.setSubject("[든든] 인증번호를 알려드려요");
-        message.setText("든든 인증번호는 " + code + " 입니다.\n5분 안에 앱에 입력해 주세요.");
+        message.setSubject("[든든] " + purposeName + " 이메일 인증 코드");
+        message.setText("인증 코드: " + code + "\n\n5분 안에 입력해 주세요.");
 
         try {
             mailSender.send(message);
