@@ -1,13 +1,8 @@
 package kopo.deundeunbackend.controller;
 
 import kopo.deundeunbackend.common.response.ApiResponse;
-import kopo.deundeunbackend.dto.request.EmailCodeRequest;
-import kopo.deundeunbackend.dto.request.EmailVerifyRequest;
-import kopo.deundeunbackend.dto.request.FindEmailRequest;
-import kopo.deundeunbackend.dto.request.LoginRequest;
-import kopo.deundeunbackend.dto.request.SignUpRequest;
-import kopo.deundeunbackend.dto.response.LoginResponse;
-import kopo.deundeunbackend.dto.response.SignUpResponse;
+import kopo.deundeunbackend.dto.request.AuthRequest;
+import kopo.deundeunbackend.dto.response.UserResponse;
 import kopo.deundeunbackend.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,15 +27,15 @@ public class AuthController {
      * @return 성공 시 회원 정보
      */
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ApiResponse<UserResponse> login(@RequestBody AuthRequest request) {
 
-        LoginResponse response = authService.login(request);
+        UserResponse response = authService.login(request);
 
         return ApiResponse.ok("로그인 되었습니다.", response);
     }
 
     @PostMapping("/signup/email-code")
-    public ApiResponse<Void> sendSignUpCode(@RequestBody EmailCodeRequest request) {
+    public ApiResponse<Void> sendSignUpCode(@RequestBody AuthRequest request) {
 
         authService.sendSignUpCode(request);
 
@@ -48,7 +43,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup/email-verify")
-    public ApiResponse<Void> verifySignUpCode(@RequestBody EmailVerifyRequest request) {
+    public ApiResponse<Void> verifySignUpCode(@RequestBody AuthRequest request) {
 
         authService.verifySignUpCode(request);
 
@@ -56,15 +51,15 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ApiResponse<SignUpResponse> signUp(@RequestBody SignUpRequest request) {
+    public ApiResponse<UserResponse> signUp(@RequestBody AuthRequest request) {
 
-        SignUpResponse response = authService.signUp(request);
+        UserResponse response = authService.signUp(request);
 
         return ApiResponse.ok("회원가입이 완료되었습니다.", response);
     }
 
     @PostMapping("/find-email")
-    public ApiResponse<Void> findEmail(@RequestBody FindEmailRequest request) {
+    public ApiResponse<Void> findEmail(@RequestBody AuthRequest request) {
 
         authService.findEmail(request);
 

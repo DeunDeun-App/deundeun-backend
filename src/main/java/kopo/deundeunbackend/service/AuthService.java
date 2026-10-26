@@ -4,13 +4,8 @@ import kopo.deundeunbackend.common.exception.ApiException;
 import kopo.deundeunbackend.common.utils.InputValidator;
 import kopo.deundeunbackend.common.utils.PasswordUtil;
 import kopo.deundeunbackend.domain.User;
-import kopo.deundeunbackend.dto.request.EmailCodeRequest;
-import kopo.deundeunbackend.dto.request.EmailVerifyRequest;
-import kopo.deundeunbackend.dto.request.FindEmailRequest;
-import kopo.deundeunbackend.dto.request.LoginRequest;
-import kopo.deundeunbackend.dto.request.SignUpRequest;
-import kopo.deundeunbackend.dto.response.LoginResponse;
-import kopo.deundeunbackend.dto.response.SignUpResponse;
+import kopo.deundeunbackend.dto.request.AuthRequest;
+import kopo.deundeunbackend.dto.response.UserResponse;
 import kopo.deundeunbackend.mapper.UserMapper;
 import kopo.deundeunbackend.service.EmailVerificationService.Purpose;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +30,7 @@ public class AuthService {
      * @return 로그인한 회원 정보
      * @throws ApiException 입력값이 비었거나 인증에 실패한 경우
      */
-    public LoginResponse login(LoginRequest request) {
+    public UserResponse login(AuthRequest request) {
 
         String email = request == null ? null : InputValidator.trimToNull(request.email());
         String password = request == null ? null : request.password();
@@ -56,10 +51,10 @@ public class AuthService {
 
         log.info("로그인 성공: userId={}", user.getUserId());
 
-        return LoginResponse.from(user);
+        return UserResponse.from(user);
     }
 
-    public void sendSignUpCode(EmailCodeRequest request) {
+    public void sendSignUpCode(AuthRequest request) {
         String email = InputValidator.requireEmail(request == null ? null : request.email());
 
         if (userMapper.selectByEmail(email) != null) {
@@ -69,14 +64,14 @@ public class AuthService {
         emailVerificationService.sendCode(Purpose.SIGNUP, email);
     }
 
-    public void verifySignUpCode(EmailVerifyRequest request) {
+    public void verifySignUpCode(AuthRequest request) {
         String email = InputValidator.requireEmail(request == null ? null : request.email());
         String code = InputValidator.requireCode(request.code());
 
         emailVerificationService.verify(Purpose.SIGNUP, email, code);
     }
 
-    public SignUpResponse signUp(SignUpRequest request) {
+    public UserResponse signUp(AuthRequest request) {
         if (request == null) {
             throw ApiException.badRequest("INVALID_REQUEST", "요청 형식이 올바르지 않습니다.");
         }
@@ -109,10 +104,10 @@ public class AuthService {
         emailVerificationService.consume(Purpose.SIGNUP, email);
         log.info("회원가입 완료: userId={}", user.getUserId());
 
-        return SignUpResponse.from(user);
+        return UserResponse.from(user);
     }
 
-    public void findEmail(FindEmailRequest request) {
+    public void findEmail(AuthRequest request) {
         String name = InputValidator.requireName(request == null ? null : request.name());
         String email = InputValidator.requireEmail(request.email());
 

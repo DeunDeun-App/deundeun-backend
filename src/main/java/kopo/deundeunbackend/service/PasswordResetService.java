@@ -6,11 +6,7 @@ import kopo.deundeunbackend.common.utils.InputValidator;
 import kopo.deundeunbackend.common.utils.PasswordUtil;
 import kopo.deundeunbackend.domain.AuthToken;
 import kopo.deundeunbackend.domain.User;
-import kopo.deundeunbackend.dto.request.EmailCodeRequest;
-import kopo.deundeunbackend.dto.request.EmailVerifyRequest;
-import kopo.deundeunbackend.dto.request.PasswordResetRequest;
-import kopo.deundeunbackend.dto.request.ResetTokenRequest;
-import kopo.deundeunbackend.dto.response.ResetTokenResponse;
+import kopo.deundeunbackend.dto.request.AuthRequest;
 import kopo.deundeunbackend.mapper.AuthTokenMapper;
 import kopo.deundeunbackend.mapper.UserMapper;
 import kopo.deundeunbackend.service.EmailVerificationService.Purpose;
@@ -32,7 +28,7 @@ public class PasswordResetService {
 
     private final EmailVerificationService emailVerificationService;
 
-    public void sendCode(EmailCodeRequest request) {
+    public void sendCode(AuthRequest request) {
         String email = InputValidator.requireEmail(request == null ? null : request.email());
 
         if (userMapper.selectByEmail(email) == null) {
@@ -42,14 +38,14 @@ public class PasswordResetService {
         emailVerificationService.sendCode(Purpose.PASSWORD_RESET, email);
     }
 
-    public void verifyCode(EmailVerifyRequest request) {
+    public void verifyCode(AuthRequest request) {
         String email = InputValidator.requireEmail(request == null ? null : request.email());
         String code = InputValidator.requireCode(request.code());
 
         emailVerificationService.verify(Purpose.PASSWORD_RESET, email, code);
     }
 
-    public ResetTokenResponse issueResetToken(ResetTokenRequest request) {
+    public String issueResetToken(AuthRequest request) {
         String name = InputValidator.requireName(request == null ? null : request.name());
         String email = InputValidator.requireEmail(request.email());
 
@@ -70,13 +66,13 @@ public class PasswordResetService {
         authTokenMapper.insertToken(token, RESET_TOKEN_VALID_MINUTES);
         emailVerificationService.consume(Purpose.PASSWORD_RESET, email);
 
-        return new ResetTokenResponse(token.getTokenValue());
+        return token.getTokenValue();
     }
 
     @Transactional
-    public void resetPassword(PasswordResetRequest request) {
+    public void resetPassword(AuthRequest request) {
         String tokenValue = InputValidator.trimToNull(request == null ? null : request.resetToken());
-        String password = InputValidator.requirePassword(request == null ? null : request.newPassword());
+        String password = InputValidator.requirePassword(request == null ? null : request.password());
 
         AuthToken token = tokenValue == null ? null
                 : authTokenMapper.selectUsableToken(tokenValue, AuthToken.TYPE_PASSWORD_RESET);

@@ -1,11 +1,7 @@
 package kopo.deundeunbackend.controller;
 
 import kopo.deundeunbackend.common.response.ApiResponse;
-import kopo.deundeunbackend.dto.request.EmailCodeRequest;
-import kopo.deundeunbackend.dto.request.EmailVerifyRequest;
-import kopo.deundeunbackend.dto.request.PasswordResetRequest;
-import kopo.deundeunbackend.dto.request.ResetTokenRequest;
-import kopo.deundeunbackend.dto.response.ResetTokenResponse;
+import kopo.deundeunbackend.dto.request.AuthRequest;
 import kopo.deundeunbackend.service.PasswordResetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +17,7 @@ public class PasswordController {
     private final PasswordResetService passwordResetService;
 
     @PostMapping("/email-code")
-    public ApiResponse<Void> sendCode(@RequestBody EmailCodeRequest request) {
+    public ApiResponse<Void> sendCode(@RequestBody AuthRequest request) {
 
         passwordResetService.sendCode(request);
 
@@ -29,7 +25,7 @@ public class PasswordController {
     }
 
     @PostMapping("/email-verify")
-    public ApiResponse<Void> verifyCode(@RequestBody EmailVerifyRequest request) {
+    public ApiResponse<Void> verifyCode(@RequestBody AuthRequest request) {
 
         passwordResetService.verifyCode(request);
 
@@ -37,15 +33,15 @@ public class PasswordController {
     }
 
     @PostMapping("/reset-token")
-    public ApiResponse<ResetTokenResponse> issueResetToken(@RequestBody ResetTokenRequest request) {
+    public ApiResponse<String> issueResetToken(@RequestBody AuthRequest request) {
 
-        ResetTokenResponse response = passwordResetService.issueResetToken(request);
+        String resetToken = passwordResetService.issueResetToken(request);
 
-        return ApiResponse.ok("본인 확인이 완료되었습니다.", response);
+        return ApiResponse.ok("본인 확인이 완료되었습니다.", resetToken);
     }
 
     @PostMapping("/reset")
-    public ApiResponse<Void> resetPassword(@RequestBody PasswordResetRequest request) {
+    public ApiResponse<Void> resetPassword(@RequestBody AuthRequest request) {
 
         passwordResetService.resetPassword(request);
 
