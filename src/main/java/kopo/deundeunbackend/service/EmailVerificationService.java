@@ -24,7 +24,7 @@ public class EmailVerificationService {
         }
     }
 
-    private static final Duration CODE_TTL = Duration.ofMinutes(5);
+    private static final Duration CODE_TTL = Duration.ofMinutes(3);
     private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
     private static final int MAX_ATTEMPTS = 5;
 
@@ -34,12 +34,14 @@ public class EmailVerificationService {
 
     private final Map<String, Verification> verifications = new ConcurrentHashMap<>();
 
-    public void sendCode(Purpose purpose, String email) {
+    public long sendCode(Purpose purpose, String email) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
 
         verifications.put(key(purpose, email),
                 new Verification(code, Instant.now().plus(CODE_TTL), false, 0));
-        mailService.sendVerificationCode(email, code, purpose.displayName);
+        mailService.sendVerificationCode(email, code, purpose.displayName, CODE_TTL.toMinutes());
+
+        return CODE_TTL.toSeconds();
     }
 
     public void verify(Purpose purpose, String email, String code) {

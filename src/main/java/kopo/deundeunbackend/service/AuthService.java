@@ -54,14 +54,14 @@ public class AuthService {
         return UserResponse.from(user);
     }
 
-    public void sendSignUpCode(AuthRequest request) {
+    public long sendSignUpCode(AuthRequest request) {
         String email = InputValidator.requireEmail(request == null ? null : request.email());
 
         if (userMapper.selectByEmail(email) != null) {
             throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입된 이메일입니다.");
         }
 
-        emailVerificationService.sendCode(Purpose.SIGNUP, email);
+        return emailVerificationService.sendCode(Purpose.SIGNUP, email);
     }
 
     public void verifySignUpCode(AuthRequest request) {
@@ -113,8 +113,11 @@ public class AuthService {
 
         User user = userMapper.selectByEmail(email);
 
-        if (user == null || !name.equals(user.getUserName())) {
-            throw ApiException.notFound("EMAIL_NOT_FOUND", "일치하는 이메일이 없습니다.");
+        if (user == null) {
+            throw ApiException.notFound("EMAIL_NOT_FOUND", "가입되지 않은 이메일입니다.");
+        }
+        if (!name.equals(user.getUserName())) {
+            throw ApiException.badRequest("NAME_MISMATCH", "이름이 일치하지 않습니다.");
         }
     }
 }

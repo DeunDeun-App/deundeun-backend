@@ -28,14 +28,13 @@ public class PasswordResetService {
 
     private final EmailVerificationService emailVerificationService;
 
-    public void sendCode(AuthRequest request) {
-        String email = InputValidator.requireEmail(request == null ? null : request.email());
+    public long sendCode(AuthRequest request) {
+        String name = InputValidator.requireName(request == null ? null : request.name());
+        String email = InputValidator.requireEmail(request.email());
 
-        if (userMapper.selectByEmail(email) == null) {
-            throw ApiException.notFound("USER_NOT_FOUND", "가입되지 않은 이메일입니다.");
-        }
+        requireMatchedUser(name, email);
 
-        emailVerificationService.sendCode(Purpose.PASSWORD_RESET, email);
+        return emailVerificationService.sendCode(Purpose.PASSWORD_RESET, email);
     }
 
     public void verifyCode(AuthRequest request) {
@@ -51,11 +50,7 @@ public class PasswordResetService {
 
         emailVerificationService.requireVerified(Purpose.PASSWORD_RESET, email);
 
-        User user = userMapper.selectByEmail(email);
-
-        if (user == null || !name.equals(user.getUserName())) {
-            throw ApiException.notFound("USER_NOT_FOUND", "입력한 이름과 이메일이 일치하는 회원이 없습니다.");
-        }
+        User user = requireMatchedUser(name, email);
 
         AuthToken token = AuthToken.builder()
                 .userId(user.getUserId())
@@ -67,6 +62,19 @@ public class PasswordResetService {
         emailVerificationService.consume(Purpose.PASSWORD_RESET, email);
 
         return token.getTokenValue();
+    }
+
+    private User requireMatchedUser(String name, String email) {
+        User user = userMapper.selectByEmail(email);
+
+        if (user == null) {
+            throw ApiException.notFound("EMAIL_NOT_FOUND", "가입되지 않은 이메일입니다.");
+        }
+        if (!name.equals(user.getUserName())) {
+            throw ApiException.badRequest("NAME_MISMATCH", "이름이 일치하지 않습니다.");
+        }
+
+        return user;
     }
 
     @Transactional

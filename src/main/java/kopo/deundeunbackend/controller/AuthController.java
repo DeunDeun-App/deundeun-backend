@@ -35,11 +35,11 @@ public class AuthController {
     }
 
     @PostMapping("/signup/email-code")
-    public ApiResponse<Void> sendSignUpCode(@RequestBody AuthRequest request) {
+    public ApiResponse<Long> sendSignUpCode(@RequestBody AuthRequest request) {
 
-        authService.sendSignUpCode(request);
+        long validSeconds = authService.sendSignUpCode(request);
 
-        return ApiResponse.ok("인증번호를 보냈습니다. 메일함을 확인해 주세요.", null);
+        return ApiResponse.ok("인증번호를 보냈습니다. 메일함을 확인해 주세요.", validSeconds);
     }
 
     @PostMapping("/signup/email-verify")

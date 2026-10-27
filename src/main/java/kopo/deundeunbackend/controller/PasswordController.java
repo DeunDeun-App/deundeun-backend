@@ -17,11 +17,11 @@ public class PasswordController {
     private final PasswordResetService passwordResetService;
 
     @PostMapping("/email-code")
-    public ApiResponse<Void> sendCode(@RequestBody AuthRequest request) {
+    public ApiResponse<Long> sendCode(@RequestBody AuthRequest request) {
 
-        passwordResetService.sendCode(request);
+        long validSeconds = passwordResetService.sendCode(request);
 
-        return ApiResponse.ok("인증번호를 보냈습니다. 메일함을 확인해 주세요.", null);
+        return ApiResponse.ok("인증번호를 보냈습니다. 메일함을 확인해 주세요.", validSeconds);
     }
 
     @PostMapping("/email-verify")
