@@ -29,7 +29,7 @@ public class PasswordController {
 
         passwordResetService.verifyCode(request);
 
-        return ApiResponse.ok("인증이 완료되었습니다.", null);
+        return ApiResponse.ok("인증되었어요.", null);
     }
 
     @PostMapping("/reset-token")
@@ -37,7 +37,7 @@ public class PasswordController {
 
         String resetToken = passwordResetService.issueResetToken(request);
 
-        return ApiResponse.ok("본인 확인이 완료되었습니다.", resetToken);
+        return ApiResponse.ok("본인 확인이 끝났어요.", resetToken);
     }
 
     @PostMapping("/reset")
@@ -45,6 +45,6 @@ public class PasswordController {
 
         passwordResetService.resetPassword(request);
 
-        return ApiResponse.ok("비밀번호가 변경되었습니다.", null);
+        return ApiResponse.ok("비밀번호를 바꿨어요.", null);
     }
 }

@@ -36,7 +36,7 @@ public class AuthService {
         String password = request == null ? null : request.password();
 
         if (email == null) {
-            throw ApiException.badRequest("EMAIL_REQUIRED", "이메일을 입력해 주세요.");
+            throw ApiException.badRequest("EMAIL_REQUIRED", "이메일 주소를 입력해 주세요.");
         }
         if (password == null || password.isEmpty()) {
             throw ApiException.badRequest("PASSWORD_REQUIRED", "비밀번호를 입력해 주세요.");
@@ -46,7 +46,7 @@ public class AuthService {
 
         if (user == null || !PasswordUtil.matches(password, user.getPwSalt(), user.getPwHash())) {
             log.info("로그인 실패: email={}", email);
-            throw ApiException.unauthorized("LOGIN_FAILED", "이메일 또는 비밀번호가 올바르지 않습니다.");
+            throw ApiException.unauthorized("LOGIN_FAILED", "이메일이나 비밀번호가 틀렸어요.");
         }
 
         log.info("로그인 성공: userId={}", user.getUserId());
@@ -58,7 +58,7 @@ public class AuthService {
         String email = InputValidator.requireEmail(request == null ? null : request.email());
 
         if (userMapper.selectByEmail(email) != null) {
-            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입된 이메일입니다.");
+            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입한 이메일이에요.");
         }
 
         emailVerificationService.sendCode(Purpose.SIGNUP, email);
@@ -73,7 +73,7 @@ public class AuthService {
 
     public UserResponse signUp(AuthRequest request) {
         if (request == null) {
-            throw ApiException.badRequest("INVALID_REQUEST", "요청 형식이 올바르지 않습니다.");
+            throw ApiException.badRequest("INVALID_REQUEST", "입력한 내용을 다시 확인해 주세요.");
         }
 
         String name = InputValidator.requireName(request.name());
@@ -83,7 +83,7 @@ public class AuthService {
         emailVerificationService.requireVerified(Purpose.SIGNUP, email);
 
         if (userMapper.selectByEmail(email) != null) {
-            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입된 이메일입니다.");
+            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입한 이메일이에요.");
         }
 
         String salt = PasswordUtil.newSalt();
@@ -98,7 +98,7 @@ public class AuthService {
             userMapper.insertUser(user);
 
         } catch (DuplicateKeyException e) {
-            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입된 이메일입니다.");
+            throw ApiException.conflict("EMAIL_DUPLICATED", "이미 가입한 이메일이에요.");
         }
 
         emailVerificationService.consume(Purpose.SIGNUP, email);
@@ -114,7 +114,7 @@ public class AuthService {
         User user = userMapper.selectByEmail(email);
 
         if (user == null || !name.equals(user.getUserName())) {
-            throw ApiException.notFound("EMAIL_NOT_FOUND", "일치하는 이메일이 없습니다.");
+            throw ApiException.notFound("EMAIL_NOT_FOUND", "이름과 이메일이 맞는 회원이 없어요.");
         }
     }
 }

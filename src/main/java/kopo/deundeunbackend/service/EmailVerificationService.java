@@ -51,15 +51,15 @@ public class EmailVerificationService {
         }
         if (verification.isExpired()) {
             verifications.remove(key);
-            throw ApiException.badRequest("CODE_EXPIRED", "인증번호가 만료되었습니다. 인증번호를 다시 받아 주세요.");
+            throw ApiException.badRequest("CODE_EXPIRED", "인증번호 시간이 지났어요. 다시 받아 주세요.");
         }
         if (verification.attempts() >= MAX_ATTEMPTS) {
             verifications.remove(key);
-            throw ApiException.badRequest("CODE_ATTEMPTS_EXCEEDED", "인증번호를 여러 번 틀렸습니다. 인증번호를 다시 받아 주세요.");
+            throw ApiException.badRequest("CODE_ATTEMPTS_EXCEEDED", "인증번호를 5번 틀렸어요. 다시 받아 주세요.");
         }
         if (!verification.code().equals(code)) {
             verifications.put(key, verification.failed());
-            throw ApiException.badRequest("CODE_MISMATCH", "인증번호가 일치하지 않습니다.");
+            throw ApiException.badRequest("CODE_MISMATCH", "인증번호가 틀렸어요.");
         }
 
         verifications.put(key, verification.passed(Instant.now().plus(VERIFIED_TTL)));
@@ -69,7 +69,7 @@ public class EmailVerificationService {
         Verification verification = verifications.get(key(purpose, email));
 
         if (verification == null || !verification.verified() || verification.isExpired()) {
-            throw ApiException.badRequest("EMAIL_NOT_VERIFIED", "이메일 인증을 먼저 완료해 주세요.");
+            throw ApiException.badRequest("EMAIL_NOT_VERIFIED", "이메일 인증을 먼저 해 주세요.");
         }
     }
 

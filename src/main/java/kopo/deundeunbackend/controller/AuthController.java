@@ -31,7 +31,7 @@ public class AuthController {
 
         UserResponse response = authService.login(request);
 
-        return ApiResponse.ok("로그인 되었습니다.", response);
+        return ApiResponse.ok("로그인했어요.", response);
     }
 
     @PostMapping("/signup/email-code")
@@ -47,7 +47,7 @@ public class AuthController {
 
         authService.verifySignUpCode(request);
 
-        return ApiResponse.ok("인증이 완료되었습니다.", null);
+        return ApiResponse.ok("인증되었어요.", null);
     }
 
     @PostMapping("/signup")
@@ -55,7 +55,7 @@ public class AuthController {
 
         UserResponse response = authService.signUp(request);
 
-        return ApiResponse.ok("회원가입이 완료되었습니다.", response);
+        return ApiResponse.ok("가입되었어요.", response);
     }
 
     @PostMapping("/find-email")
@@ -63,6 +63,6 @@ public class AuthController {
 
         authService.findEmail(request);
 
-        return ApiResponse.ok("일치하는 이메일이 확인되었습니다.", null);
+        return ApiResponse.ok("가입한 이메일이 맞아요.", null);
     }
 }

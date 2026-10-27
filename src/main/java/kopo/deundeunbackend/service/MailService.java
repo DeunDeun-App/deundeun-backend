@@ -45,7 +45,7 @@ public class MailService {
 
         } catch (MailException e) {
             log.error("인증번호 메일 발송 실패: email={}", to, e);
-            throw ApiException.unavailable("MAIL_SEND_FAILED", "메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
+            throw ApiException.unavailable("MAIL_SEND_FAILED", "메일을 보내지 못했어요. 조금 뒤에 다시 해 주세요.");
         }
     }
 }
