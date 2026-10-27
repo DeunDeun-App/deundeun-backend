@@ -5,7 +5,6 @@ import jakarta.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import kopo.deundeunbackend.common.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -14,6 +13,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
@@ -34,6 +34,7 @@ public class MailService {
 
     private String verificationTemplate;
 
+    @Async
     public void sendVerificationCode(String to, String code, String purposeName, long validMinutes) {
         JavaMailSender mailSender = enabled ? mailSenderProvider.getIfAvailable() : null;
 
@@ -63,7 +64,6 @@ public class MailService {
 
         } catch (MailException | MessagingException e) {
             log.error("인증번호 메일 발송 실패: email={}", to, e);
-            throw ApiException.unavailable("MAIL_SEND_FAILED", "메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
         }
     }
 

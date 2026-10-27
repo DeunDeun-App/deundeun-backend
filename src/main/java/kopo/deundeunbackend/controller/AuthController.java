@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** 인증 API. */
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
