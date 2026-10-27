@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
         log.warn("요청 본문 해석 실패: {}", e.getMessage());
 
         return ResponseEntity.badRequest()
-                .body(ApiResponse.fail("INVALID_REQUEST", "입력한 내용을 다시 확인해 주세요."));
+                .body(ApiResponse.fail("INVALID_REQUEST", "입력한 정보가 올바르지 않습니다."));
     }
 
     @ExceptionHandler(Exception.class)
@@ -34,6 +34,6 @@ public class GlobalExceptionHandler {
         log.error("처리되지 않은 예외", e);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.fail("SERVER_ERROR", "잠시 문제가 생겼어요. 조금 뒤에 다시 해 주세요."));
+                .body(ApiResponse.fail("SERVER_ERROR", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
     }
 }

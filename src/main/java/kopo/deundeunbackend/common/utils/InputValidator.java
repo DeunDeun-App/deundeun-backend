@@ -34,7 +34,7 @@ public final class InputValidator {
             throw ApiException.badRequest("NAME_REQUIRED", "이름을 입력해 주세요.");
         }
         if (name.length() > NAME_MAX_LENGTH) {
-            throw ApiException.badRequest("NAME_TOO_LONG", "이름은 50글자까지 쓸 수 있어요.");
+            throw ApiException.badRequest("NAME_TOO_LONG", "이름은 50자 이하로 입력해 주세요.");
         }
         return name;
     }
@@ -46,7 +46,7 @@ public final class InputValidator {
             throw ApiException.badRequest("EMAIL_REQUIRED", "이메일 주소를 입력해 주세요.");
         }
         if (email.length() > EMAIL_MAX_LENGTH || !EMAIL_PATTERN.matcher(email).matches()) {
-            throw ApiException.badRequest("EMAIL_INVALID", "이메일 주소를 다시 확인해 주세요.");
+            throw ApiException.badRequest("EMAIL_INVALID", "이메일 주소 형식이 올바르지 않습니다.");
         }
         return email;
     }
@@ -58,7 +58,7 @@ public final class InputValidator {
             throw ApiException.badRequest("CODE_REQUIRED", "인증번호를 입력해 주세요.");
         }
         if (!CODE_PATTERN.matcher(code).matches()) {
-            throw ApiException.badRequest("CODE_MISMATCH", "인증번호가 틀렸어요.");
+            throw ApiException.badRequest("CODE_MISMATCH", "인증번호가 일치하지 않습니다.");
         }
         return code;
     }
@@ -66,16 +66,16 @@ public final class InputValidator {
     public static String requirePassword(String password) {
         if (password == null || password.length() < PASSWORD_MIN_LENGTH
                 || password.length() > PASSWORD_MAX_LENGTH) {
-            throw ApiException.badRequest("PASSWORD_LENGTH", "비밀번호는 8~16글자로 만들어 주세요.");
+            throw ApiException.badRequest("PASSWORD_LENGTH", "비밀번호는 8~16자로 입력해 주세요.");
         }
         if (password.chars().noneMatch(c -> (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))) {
-            throw ApiException.badRequest("PASSWORD_NO_LETTER", "영어 글자를 넣어 주세요.");
+            throw ApiException.badRequest("PASSWORD_NO_LETTER", "영문이 포함되지 않았습니다.");
         }
         if (password.chars().noneMatch(Character::isDigit)) {
-            throw ApiException.badRequest("PASSWORD_NO_DIGIT", "숫자를 넣어 주세요.");
+            throw ApiException.badRequest("PASSWORD_NO_DIGIT", "숫자가 포함되지 않았습니다.");
         }
         if (password.chars().noneMatch(c -> SPECIAL_CHARS.indexOf(c) >= 0)) {
-            throw ApiException.badRequest("PASSWORD_NO_SPECIAL", "특수문자(!, @, # 등)를 넣어 주세요.");
+            throw ApiException.badRequest("PASSWORD_NO_SPECIAL", "특수문자가 포함되지 않았습니다.");
         }
         return password;
     }

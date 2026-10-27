@@ -32,7 +32,7 @@ public class PasswordResetService {
         String email = InputValidator.requireEmail(request == null ? null : request.email());
 
         if (userMapper.selectByEmail(email) == null) {
-            throw ApiException.notFound("USER_NOT_FOUND", "가입하지 않은 이메일이에요.");
+            throw ApiException.notFound("USER_NOT_FOUND", "가입되지 않은 이메일입니다.");
         }
 
         emailVerificationService.sendCode(Purpose.PASSWORD_RESET, email);
@@ -54,7 +54,7 @@ public class PasswordResetService {
         User user = userMapper.selectByEmail(email);
 
         if (user == null || !name.equals(user.getUserName())) {
-            throw ApiException.notFound("USER_NOT_FOUND", "이름과 이메일이 맞는 회원이 없어요.");
+            throw ApiException.notFound("USER_NOT_FOUND", "입력한 이름과 이메일이 일치하는 회원이 없습니다.");
         }
 
         AuthToken token = AuthToken.builder()
@@ -78,7 +78,7 @@ public class PasswordResetService {
                 : authTokenMapper.selectUsableToken(tokenValue, AuthToken.TYPE_PASSWORD_RESET);
 
         if (token == null || authTokenMapper.markUsed(token.getTokenId()) != 1) {
-            throw ApiException.badRequest("RESET_TOKEN_INVALID", "시간이 지났어요. 처음부터 다시 해 주세요.");
+            throw ApiException.badRequest("RESET_TOKEN_INVALID", "인증 시간이 지났습니다. 처음부터 다시 진행해 주세요.");
         }
 
         String salt = PasswordUtil.newSalt();
