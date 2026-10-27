@@ -46,7 +46,10 @@ public class EmailVerificationService {
         String key = key(purpose, email);
         Verification verification = verifications.get(key);
 
-        if (verification == null || verification.isExpired()) {
+        if (verification == null) {
+            throw ApiException.badRequest("CODE_NOT_REQUESTED", "인증번호를 먼저 받아 주세요.");
+        }
+        if (verification.isExpired()) {
             verifications.remove(key);
             throw ApiException.badRequest("CODE_EXPIRED", "인증번호가 만료되었습니다. 인증번호를 다시 받아 주세요.");
         }
