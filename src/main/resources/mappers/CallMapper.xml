@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.deundeunbackend.mapper.CallMapper">
+
+    <select id="existsUser" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+              FROM users
+             WHERE user_id = #{userId}
+        )
+    </select>
+
+    <select id="selectRandomScenario" resultType="CallScenario">
+        SELECT s.call_scenario_id
+             , s.call_title
+             , s.situation_text
+          FROM call_scenarios s
+         WHERE EXISTS (SELECT 1
+                         FROM call_simulator i
+                        WHERE i.call_scenario_id = s.call_scenario_id)
+         ORDER BY RAND()
+         LIMIT 1
+    </select>
+
+    <select id="selectItemsByScenarioId" resultType="CallItem">
+        SELECT item_id
+             , call_scenario_id
+             , item_order
+             , item_type
+             , label
+             , stat_label
+             , question
+             , answer
+             , keywords
+             , weak_feedback
+             , score
+          FROM call_simulator
+         WHERE call_scenario_id = #{callScenarioId}
+         ORDER BY item_order
+    </select>
+
+    <select id="selectItem" resultType="CallItem">
+        SELECT item_id
+             , call_scenario_id
+             , item_order
+             , item_type
+             , label
+             , stat_label
+             , question
+             , answer
+             , keywords
+             , weak_feedback
+             , score
+          FROM call_simulator
+         WHERE item_id = #{itemId}
+    </select>
+
+    <insert id="insertSession" parameterType="TrainingSession"
+            useGeneratedKeys="true" keyProperty="sessionId">
+        INSERT INTO training_sessions (
+            user_id
+          , training_type
+          , call_scenario_id
+        ) VALUES (
+            #{userId}
+          , #{trainingType}
+          , #{callScenarioId}
+        )
+    </insert>
+
+    <select id="selectSession" resultType="TrainingSession">
+        SELECT session_id
+             , user_id
+             , training_type
+             , call_scenario_id
+             , started_at
+             , ended_at
+             , score
+          FROM training_sessions
+         WHERE session_id = #{sessionId}
+    </select>
+
+    <update id="endSession">
+        UPDATE training_sessions
+           SET ended_at = NOW()
+             , score = #{score}
+         WHERE session_id = #{sessionId}
+           AND ended_at IS NULL
+    </update>
+
+    <select id="selectResult" resultType="SessionResult">
+        SELECT result_id
+             , session_id
+             , result_type
+             , call_item_id
+             , item_order
+             , score
+             , attempts
+             , detail_json
+          FROM session_results
+         WHERE session_id = #{sessionId}
+           AND call_item_id = #{callItemId}
+    </select>
+
+    <select id="selectResultsBySessionId" resultType="SessionResult">
+        SELECT result_id
+             , session_id
+             , result_type
+             , call_item_id
+             , item_order
+             , score
+             , attempts
+             , detail_json
+          FROM session_results
+         WHERE session_id = #{sessionId}
+         ORDER BY item_order
+    </select>
+
+    <insert id="insertResult" parameterType="SessionResult"
+            useGeneratedKeys="true" keyProperty="resultId">
+        INSERT INTO session_results (
+            session_id
+          , result_type
+          , call_item_id
+          , item_order
+          , score
+          , attempts
+          , detail_json
+        ) VALUES (
+            #{sessionId}
+          , #{resultType}
+          , #{callItemId}
+          , #{itemOrder}
+          , #{score}
+          , #{attempts}
+          , #{detailJson}
+        )
+    </insert>
+
+    <update id="updateResult" parameterType="SessionResult">
+        UPDATE session_results
+           SET score = #{score}
+             , attempts = #{attempts}
+             , detail_json = #{detailJson}
+         WHERE result_id = #{resultId}
+    </update>
+
+</mapper>
