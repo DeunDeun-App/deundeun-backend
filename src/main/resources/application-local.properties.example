@@ -24,3 +24,8 @@ spring.mail.username=
 spring.mail.password=
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
+
+deundeun.gemini.api-key=
+deundeun.gemini.model=gemini-3.5-flash-lite
+deundeun.disaster.service-key=
+deundeun.disaster.region=
