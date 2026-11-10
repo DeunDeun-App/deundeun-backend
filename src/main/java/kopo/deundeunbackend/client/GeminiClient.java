@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.JsonNode;
@@ -20,6 +22,8 @@ public class GeminiClient {
 
     private static final String ENDPOINT =
             "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
+    private static final int MAX_ATTEMPTS = 2;
+    private static final Duration RETRY_DELAY = Duration.ofSeconds(2);
 
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
     private final RestClient restClient;
@@ -50,28 +54,50 @@ public class GeminiClient {
                         "responseMimeType", "application/json",
                         "responseSchema", schema));
 
-        try {
-            String response = restClient.post()
-                    .uri(ENDPOINT, model)
-                    .header("x-goog-api-key", apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(jsonMapper.writeValueAsString(body))
-                    .retrieve()
-                    .body(String.class);
+        String response = request(jsonMapper.writeValueAsString(body));
 
-            JsonNode root = jsonMapper.readTree(response);
-            String text = root.path("candidates").path(0).path("content").path("parts").path(0)
-                    .path("text").asString("");
+        JsonNode root = jsonMapper.readTree(response);
+        String text = root.path("candidates").path(0).path("content").path("parts").path(0)
+                .path("text").asString("");
 
-            if (text.isBlank()) {
-                log.warn("Gemini 응답이 비어 있습니다: {}", response);
+        if (text.isBlank()) {
+            log.warn("Gemini 응답이 비어 있습니다: {}", response);
+            throw unavailable();
+        }
+
+        return jsonMapper.readTree(text);
+    }
+
+    private String request(String body) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return restClient.post()
+                        .uri(ENDPOINT, model)
+                        .header("x-goog-api-key", apiKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(body)
+                        .retrieve()
+                        .body(String.class);
+
+            } catch (HttpServerErrorException | HttpClientErrorException.TooManyRequests e) {
+                log.warn("Gemini 호출 실패({}회): {}", attempt, e.getStatusCode());
+                if (attempt >= MAX_ATTEMPTS) {
+                    throw unavailable();
+                }
+                sleep(RETRY_DELAY.multipliedBy(attempt));
+
+            } catch (RestClientException e) {
+                log.warn("Gemini 호출 실패: {}", e.getMessage());
                 throw unavailable();
             }
+        }
+    }
 
-            return jsonMapper.readTree(text);
-
-        } catch (RestClientException e) {
-            log.warn("Gemini 호출 실패: {}", e.getMessage());
+    private void sleep(Duration delay) {
+        try {
+            Thread.sleep(delay.toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw unavailable();
         }
     }

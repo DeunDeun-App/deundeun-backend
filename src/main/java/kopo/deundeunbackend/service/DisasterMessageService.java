@@ -46,8 +46,10 @@ public class DisasterMessageService {
             어려운 재난문자를 발달장애인이 바로 이해하고 행동할 수 있게 쉬운 말로 바꿔.
 
             규칙
-            - 모든 문장은 '~해요', '~하세요' 같은 부드러운 해요체로 짧게 써.
-            - 한자어, 전문용어, 영어, 숫자 단위는 쉬운 우리말로 바꿔. (예: 호우주의보 -> 비가 많이 와요, 하천 -> 강)
+            - 모든 문장은 '~해요', '~하세요' 같은 부드러운 해요체로 짧게 써. title도 명사로 끝내지 말고 '~해요', '~하세요'로 끝나는 문장으로 써.
+            - 한자어, 전문용어, 영어, 숫자 단위는 쉬운 우리말로 바꿔.
+              (예: 호우주의보 -> 비가 많이 와요, 하천 -> 강, 침수 -> 물에 잠겨요, 대피 -> 안전한 곳으로 피해요, 즉시 -> 지금 바로, 발효/발령/권고 -> 쓰지 않기)
+            - '절대', '반드시' 같은 겁주는 말 대신 차분하고 다정하게 써.
             - 문자에 없는 내용을 지어내지 마. 지역 이름은 문자에 있는 그대로 써.
             - items는 2~3개. 첫 번째는 무슨 일이 생겼는지, 나머지는 가장 중요한 주의사항이야.
             - items의 title은 15자 이내, description은 한두 문장, 40자 이내로 써.
@@ -85,7 +87,13 @@ public class DisasterMessageService {
             return basicMessage(message, types);
         }
 
-        MessageTranslation translation = translate(message, types);
+        MessageTranslation translation;
+        try {
+            translation = translate(message, types);
+        } catch (ApiException e) {
+            log.warn("AI 변환 실패로 기본 행동요령을 안내합니다: hash={}, code={}", id, e.getCode());
+            return basicMessage(message, types);
+        }
         disasterMapper.insertTranslation(translation);
         log.info("재난문자 쉬운 말 변환 저장: hash={}, code={}", id, translation.getDisasterCode());
 
