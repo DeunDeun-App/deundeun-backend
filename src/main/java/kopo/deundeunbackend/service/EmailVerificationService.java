@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class EmailVerificationService {
 
     public enum Purpose {
-        SIGNUP("회원가입"), PASSWORD_RESET("비밀번호 찾기");
+        SIGNUP("회원가입"), FIND_LOGIN_ID("아이디 찾기"), PASSWORD_RESET("비밀번호 찾기");
 
         private final String displayName;
 

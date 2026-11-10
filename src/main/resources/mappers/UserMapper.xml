@@ -4,9 +4,9 @@
 
 <mapper namespace="kopo.deundeunbackend.mapper.UserMapper">
 
-    <!--로그인 검증용 조회-->
-    <select id="selectByEmail" resultType="User">
+    <sql id="userColumns">
         SELECT user_id
+             , login_id
              , email
              , pw_hash
              , pw_salt
@@ -21,32 +21,41 @@
              , created_at
              , updated_at
           FROM users
+    </sql>
+
+    <select id="selectByEmail" resultType="User">
+        <include refid="userColumns"/>
          WHERE email = #{email}
+    </select>
+
+    <select id="selectByLoginId" resultType="User">
+        <include refid="userColumns"/>
+         WHERE login_id = #{loginId}
+    </select>
+
+    <select id="selectByUserId" resultType="User">
+        <include refid="userColumns"/>
+         WHERE user_id = #{userId}
     </select>
 
     <insert id="insertUser" parameterType="User"
             useGeneratedKeys="true" keyProperty="userId">
         INSERT INTO users (
-            email
+            login_id
+          , email
           , pw_hash
           , pw_salt
           , user_name
           , user_phone
         ) VALUES (
-            #{email}
+            #{loginId}
+          , #{email}
           , #{pwHash}
           , #{pwSalt}
           , #{userName}
           , #{userPhone}
         )
     </insert>
-
-    <update id="updatePassword">
-        UPDATE users
-           SET pw_hash = #{pwHash}
-             , pw_salt = #{pwSalt}
-         WHERE email = #{email}
-    </update>
 
     <update id="updatePasswordByUserId">
         UPDATE users

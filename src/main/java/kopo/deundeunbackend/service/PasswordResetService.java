@@ -29,10 +29,10 @@ public class PasswordResetService {
     private final EmailVerificationService emailVerificationService;
 
     public long sendCode(AuthRequest request) {
-        String name = InputValidator.requireName(request == null ? null : request.name());
+        String loginId = InputValidator.requireLoginId(request == null ? null : request.loginId());
         String email = InputValidator.requireEmail(request.email());
 
-        requireMatchedUser(name, email);
+        requireMatchedUser(loginId, email);
 
         return emailVerificationService.sendCode(Purpose.PASSWORD_RESET, email);
     }
@@ -45,12 +45,12 @@ public class PasswordResetService {
     }
 
     public String issueResetToken(AuthRequest request) {
-        String name = InputValidator.requireName(request == null ? null : request.name());
+        String loginId = InputValidator.requireLoginId(request == null ? null : request.loginId());
         String email = InputValidator.requireEmail(request.email());
 
         emailVerificationService.requireVerified(Purpose.PASSWORD_RESET, email);
 
-        User user = requireMatchedUser(name, email);
+        User user = requireMatchedUser(loginId, email);
 
         AuthToken token = AuthToken.builder()
                 .userId(user.getUserId())
@@ -64,14 +64,14 @@ public class PasswordResetService {
         return token.getTokenValue();
     }
 
-    private User requireMatchedUser(String name, String email) {
-        User user = userMapper.selectByEmail(email);
+    private User requireMatchedUser(String loginId, String email) {
+        User user = userMapper.selectByLoginId(loginId);
 
         if (user == null) {
-            throw ApiException.notFound("EMAIL_NOT_FOUND", "가입되지 않은 이메일입니다.");
+            throw ApiException.notFound("LOGIN_ID_NOT_FOUND", "가입되지 않은 아이디입니다.");
         }
-        if (!name.equals(user.getUserName())) {
-            throw ApiException.badRequest("NAME_MISMATCH", "이름이 일치하지 않습니다.");
+        if (!email.equalsIgnoreCase(user.getEmail())) {
+            throw ApiException.badRequest("EMAIL_MISMATCH", "가입 시 등록한 이메일 주소와 일치하지 않습니다.");
         }
 
         return user;

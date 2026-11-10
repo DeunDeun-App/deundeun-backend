@@ -1,5 +1,6 @@
 package kopo.deundeunbackend.common.utils;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 import kopo.deundeunbackend.common.exception.ApiException;
 
@@ -12,6 +13,7 @@ public final class InputValidator {
 
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern LOGIN_ID_PATTERN = Pattern.compile("^[a-z][a-z0-9]{3,19}$");
     private static final Pattern CODE_PATTERN = Pattern.compile("^\\d{6}$");
     private static final String SPECIAL_CHARS = "!@#$%^&*()_+-=[]{}|;:'\",.<>/?`~\\";
 
@@ -37,6 +39,19 @@ public final class InputValidator {
             throw ApiException.badRequest("NAME_TOO_LONG", "이름은 50자 이하로 입력해 주세요.");
         }
         return name;
+    }
+
+    public static String requireLoginId(String value) {
+        String loginId = trimToNull(value);
+
+        if (loginId == null) {
+            throw ApiException.badRequest("LOGIN_ID_REQUIRED", "아이디를 입력해 주세요.");
+        }
+        loginId = loginId.toLowerCase(Locale.ROOT);
+        if (!LOGIN_ID_PATTERN.matcher(loginId).matches()) {
+            throw ApiException.badRequest("LOGIN_ID_INVALID", "아이디는 영문으로 시작하는 4~20자의 영문, 숫자로 입력해 주세요.");
+        }
+        return loginId;
     }
 
     public static String requireEmail(String value) {

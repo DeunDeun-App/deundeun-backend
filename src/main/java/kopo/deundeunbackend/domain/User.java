@@ -21,6 +21,8 @@ public class User {
     // 회원 아이디 (PK)
     private Long userId;
 
+    private String loginId;
+
     // 이메일
     private String email;
 
