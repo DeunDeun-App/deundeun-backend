@@ -14,8 +14,10 @@
              , user_phone
              , birth_date
              , gender
+             , disability_type
              , severity
              , address
+             , is_share_location
              , is_share_result
              , is_sos_alert
              , created_at
@@ -64,5 +66,30 @@
              , updated_at = NOW()
          WHERE user_id = #{userId}
     </update>
+
+    <update id="updateProfile" parameterType="User">
+        UPDATE users
+           SET user_name = #{userName}
+             , user_phone = #{userPhone}
+             , birth_date = #{birthDate}
+             , disability_type = #{disabilityType}
+             , severity = #{severity}
+             , updated_at = NOW()
+         WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateSettings">
+        UPDATE users
+           SET is_share_location = #{shareLocation}
+             , is_share_result = #{shareResult}
+             , is_sos_alert = #{sosAlert}
+             , updated_at = NOW()
+         WHERE user_id = #{userId}
+    </update>
+
+    <delete id="deleteUser">
+        DELETE FROM users
+         WHERE user_id = #{userId}
+    </delete>
 
 </mapper>

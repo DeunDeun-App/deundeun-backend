@@ -68,6 +68,10 @@ public class AuthService {
         return UserResponse.from(user);
     }
 
+    public void logout(String authorization) {
+        sessionService.expire(authorization);
+    }
+
     public long sendSignUpCode(AuthRequest request) {
         String email = InputValidator.requireEmail(request == null ? null : request.email());
 

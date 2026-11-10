@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.deundeunbackend.mapper.NotificationMapper">
+
+    <select id="selectRecent" resultType="Notification">
+        SELECT noti_id
+             , noti_type
+             , title
+             , body
+             , status
+             , created_at
+          FROM notifications
+         WHERE user_id = #{userId}
+         ORDER BY created_at DESC, noti_id DESC
+         LIMIT #{limit}
+    </select>
+
+</mapper>

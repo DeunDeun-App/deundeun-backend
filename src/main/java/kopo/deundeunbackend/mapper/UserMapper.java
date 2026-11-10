@@ -18,4 +18,13 @@ public interface UserMapper {
     int updatePasswordByUserId(@Param("userId") Long userId,
                                @Param("pwHash") String pwHash,
                                @Param("pwSalt") String pwSalt);
+
+    int updateProfile(User user);
+
+    int updateSettings(@Param("userId") Long userId,
+                       @Param("shareLocation") boolean shareLocation,
+                       @Param("shareResult") boolean shareResult,
+                       @Param("sosAlert") boolean sosAlert);
+
+    int deleteUser(@Param("userId") Long userId);
 }

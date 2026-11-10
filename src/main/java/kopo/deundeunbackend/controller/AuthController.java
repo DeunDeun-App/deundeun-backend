@@ -47,6 +47,15 @@ public class AuthController {
         return ApiResponse.ok("로그인 상태입니다.", response);
     }
 
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+
+        authService.logout(authorization);
+
+        return ApiResponse.ok("로그아웃되었습니다.", null);
+    }
+
     @PostMapping("/signup/email-code")
     public ApiResponse<Long> sendSignUpCode(@RequestBody AuthRequest request) {
 
