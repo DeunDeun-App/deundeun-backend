@@ -5,9 +5,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
-public record DisasterMessage(String region, String text, String step, String category, String createdAt) {
+public record DisasterMessage(String id, String region, String text, String step, String category,
+                              String createdAt) {
 
-    public String hash() {
+    public static DisasterMessage of(String region, String text, String step, String category, String createdAt) {
+        return new DisasterMessage(hash(text), region, text, step, category, createdAt);
+    }
+
+    private static String hash(String text) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);

@@ -7,7 +7,6 @@ import kopo.deundeunbackend.common.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -25,20 +24,17 @@ public class GeminiClient {
     private static final int MAX_ATTEMPTS = 2;
     private static final Duration RETRY_DELAY = Duration.ofSeconds(2);
 
-    private final JsonMapper jsonMapper = JsonMapper.builder().build();
-    private final RestClient restClient;
+    private final JsonMapper jsonMapper;
+    private final RestClient restClient = RestClients.create(Duration.ofSeconds(30));
     private final String apiKey;
     private final String model;
 
-    public GeminiClient(@Value("${deundeun.gemini.api-key:}") String apiKey,
+    public GeminiClient(JsonMapper jsonMapper,
+                        @Value("${deundeun.gemini.api-key:}") String apiKey,
                         @Value("${deundeun.gemini.model:gemini-3.5-flash-lite}") String model) {
+        this.jsonMapper = jsonMapper;
         this.apiKey = apiKey;
         this.model = model;
-
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofSeconds(5));
-        requestFactory.setReadTimeout(Duration.ofSeconds(30));
-        this.restClient = RestClient.builder().requestFactory(requestFactory).build();
     }
 
     public boolean isEnabled() {

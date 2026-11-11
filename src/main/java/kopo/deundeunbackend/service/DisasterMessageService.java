@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import kopo.deundeunbackend.client.DisasterMessageClient;
@@ -65,7 +66,7 @@ public class DisasterMessageService {
 
     private final DisasterMapper disasterMapper;
 
-    private final JsonMapper jsonMapper = JsonMapper.builder().build();
+    private final JsonMapper jsonMapper;
 
     public List<DisasterMessageResponse> getRecentMessages(boolean refresh) {
         return disasterMessageClient.fetchRecent(refresh).stream()
@@ -101,14 +102,14 @@ public class DisasterMessageService {
     }
 
     private DisasterMessage findMessage(String id) {
-        for (boolean refresh : new boolean[]{false, true}) {
-            for (DisasterMessage message : disasterMessageClient.fetchRecent(refresh)) {
-                if (message.hash().equals(id)) {
-                    return message;
-                }
-            }
-        }
-        throw ApiException.notFound("MESSAGE_NOT_FOUND", "재난문자를 찾을 수 없습니다. 목록을 새로 불러와 주세요.");
+        return findIn(disasterMessageClient.fetchRecent(false), id)
+                .or(() -> findIn(disasterMessageClient.fetchRecent(true), id))
+                .orElseThrow(() -> ApiException.notFound("MESSAGE_NOT_FOUND",
+                        "재난문자를 찾을 수 없습니다. 목록을 새로 불러와 주세요."));
+    }
+
+    private Optional<DisasterMessage> findIn(List<DisasterMessage> messages, String id) {
+        return messages.stream().filter(message -> message.id().equals(id)).findFirst();
     }
 
     private MessageTranslation translate(DisasterMessage message, Map<String, DisasterType> types) {
@@ -148,7 +149,7 @@ public class DisasterMessageService {
         }
 
         return MessageTranslation.builder()
-                .msgHash(message.hash())
+                .msgHash(message.id())
                 .disasterCode(disasterCode)
                 .region(truncate(message.region(), 50))
                 .originalText(message.text())
@@ -222,7 +223,7 @@ public class DisasterMessageService {
                 : message.region() + "에 재난문자가 왔어요";
         List<Item> items = List.of(new Item(type == null ? "INFO" : type.getIcon(), easyName, description));
 
-        return new EasyMessageResponse(message.hash(), code, disasterName(types, code), items, actions,
+        return new EasyMessageResponse(message.id(), code, disasterName(types, code), items, actions,
                 easyName + ". " + String.join(" ", actions), false);
     }
 

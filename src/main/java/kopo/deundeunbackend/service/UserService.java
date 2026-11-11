@@ -4,17 +4,13 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 import kopo.deundeunbackend.common.exception.ApiException;
 import kopo.deundeunbackend.common.utils.InputValidator;
 import kopo.deundeunbackend.domain.Guardian;
 import kopo.deundeunbackend.domain.User;
-import kopo.deundeunbackend.dto.request.ProfileUpdateRequest;
-import kopo.deundeunbackend.dto.request.SettingsRequest;
+import kopo.deundeunbackend.dto.request.UserRequest;
 import kopo.deundeunbackend.dto.response.NotificationResponse;
 import kopo.deundeunbackend.dto.response.ProfileResponse;
-import kopo.deundeunbackend.mapper.GuardianMapper;
-import kopo.deundeunbackend.mapper.NotificationMapper;
 import kopo.deundeunbackend.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,62 +23,47 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private static final int NOTICE_LIMIT = 5;
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^01[016789]\\d{7,8}$");
+    private static final int GUARDIAN_NAME_MAX_LENGTH = 50;
     private static final Set<String> DISABILITY_TYPES = Set.of("INTELLECTUAL", "AUTISM", "DEVELOPMENTAL");
     private static final Set<String> SEVERITIES = Set.of("SEVERE", "MILD", "UNKNOWN");
     private static final Set<String> RELATIONS = Set.of("MOTHER", "FATHER", "ETC");
 
     private final UserMapper userMapper;
 
-    private final GuardianMapper guardianMapper;
-
-    private final NotificationMapper notificationMapper;
-
     public ProfileResponse getProfile(Long userId) {
-        User user = requireUser(userId);
-
-        return ProfileResponse.of(user, guardianMapper.selectPrimary(userId));
+        return ProfileResponse.of(requireUser(userId), userMapper.selectPrimaryGuardian(userId));
     }
 
     @Transactional
-    public ProfileResponse updateProfile(Long userId, ProfileUpdateRequest request) {
-        if (request == null) {
-            throw ApiException.badRequest("INVALID_REQUEST", "입력한 정보가 올바르지 않습니다.");
-        }
-
+    public ProfileResponse updateProfile(Long userId, UserRequest.Profile request) {
         User user = requireUser(userId);
 
         user.setUserName(InputValidator.requireName(request.name()));
-        user.setUserPhone(normalizePhone(request.phone(), "PHONE_INVALID", "전화번호 형식이 올바르지 않습니다."));
+        user.setUserPhone(InputValidator.optionalPhone(request.phone(), "PHONE_INVALID", "전화번호 형식이 올바르지 않습니다."));
         user.setBirthDate(parseBirthDate(request.birthDate()));
         user.setDisabilityType(pick(request.disabilityType(), DISABILITY_TYPES, null));
         user.setSeverity(pick(request.severity(), SEVERITIES, "UNKNOWN"));
         userMapper.updateProfile(user);
 
         saveGuardian(userId, request);
-
         log.info("내 정보 수정: userId={}", userId);
 
         return getProfile(userId);
     }
 
-    public ProfileResponse updateSettings(Long userId, SettingsRequest request) {
+    public ProfileResponse updateSettings(Long userId, UserRequest.Settings request) {
         User user = requireUser(userId);
 
-        boolean shareLocation = request == null || request.shareLocation() == null
-                ? Boolean.TRUE.equals(user.getIsShareLocation()) : request.shareLocation();
-        boolean shareResult = request == null || request.shareResult() == null
-                ? Boolean.TRUE.equals(user.getIsShareResult()) : request.shareResult();
-        boolean sosAlert = request == null || request.sosAlert() == null
-                ? Boolean.TRUE.equals(user.getIsSosAlert()) : request.sosAlert();
-
-        userMapper.updateSettings(userId, shareLocation, shareResult, sosAlert);
+        userMapper.updateSettings(userId,
+                valueOr(request.shareLocation(), user.getIsShareLocation()),
+                valueOr(request.shareResult(), user.getIsShareResult()),
+                valueOr(request.sosAlert(), user.getIsSosAlert()));
 
         return getProfile(userId);
     }
 
     public List<NotificationResponse> getRecentNotifications(Long userId) {
-        return notificationMapper.selectRecent(userId, NOTICE_LIMIT).stream()
+        return userMapper.selectRecentNotifications(userId, NOTICE_LIMIT).stream()
                 .map(NotificationResponse::from)
                 .toList();
     }
@@ -98,19 +79,19 @@ public class UserService {
         User user = userMapper.selectByUserId(userId);
 
         if (user == null) {
-            throw ApiException.unauthorized("SESSION_EXPIRED", "로그인이 필요합니다. 다시 로그인해 주세요.");
+            throw SessionService.sessionExpired();
         }
         return user;
     }
 
-    private void saveGuardian(Long userId, ProfileUpdateRequest request) {
+    private void saveGuardian(Long userId, UserRequest.Profile request) {
         String name = InputValidator.trimToNull(request.guardianName());
         String phone = InputValidator.trimToNull(request.guardianPhone());
-        Guardian current = guardianMapper.selectPrimary(userId);
+        Guardian current = userMapper.selectPrimaryGuardian(userId);
 
         if (name == null && phone == null) {
             if (current != null) {
-                guardianMapper.deleteByUserId(userId);
+                userMapper.deleteGuardiansByUserId(userId);
             }
             return;
         }
@@ -120,7 +101,7 @@ public class UserService {
         if (phone == null) {
             throw ApiException.badRequest("GUARDIAN_PHONE_REQUIRED", "보호자 연락처를 입력해 주세요.");
         }
-        if (name.length() > 50) {
+        if (name.length() > GUARDIAN_NAME_MAX_LENGTH) {
             throw ApiException.badRequest("GUARDIAN_NAME_TOO_LONG", "보호자 이름은 50자 이하로 입력해 주세요.");
         }
 
@@ -128,30 +109,16 @@ public class UserService {
                 .guardianId(current == null ? null : current.getGuardianId())
                 .userId(userId)
                 .guardianName(name)
-                .guardianPhone(normalizePhone(phone, "GUARDIAN_PHONE_INVALID", "보호자 연락처 형식이 올바르지 않습니다."))
+                .guardianPhone(InputValidator.optionalPhone(phone, "GUARDIAN_PHONE_INVALID",
+                        "보호자 연락처 형식이 올바르지 않습니다."))
                 .guardianRelation(pick(request.guardianRelation(), RELATIONS, "ETC"))
                 .build();
 
         if (current == null) {
-            guardianMapper.insertGuardian(guardian);
+            userMapper.insertGuardian(guardian);
         } else {
-            guardianMapper.updateGuardian(guardian);
+            userMapper.updateGuardian(guardian);
         }
-    }
-
-    private String normalizePhone(String value, String code, String message) {
-        String trimmed = InputValidator.trimToNull(value);
-        if (trimmed == null) {
-            return null;
-        }
-
-        String digits = trimmed.replaceAll("[\\s-]", "");
-        if (!PHONE_PATTERN.matcher(digits).matches()) {
-            throw ApiException.badRequest(code, message);
-        }
-
-        int middleEnd = digits.length() == 11 ? 7 : 6;
-        return digits.substring(0, 3) + "-" + digits.substring(3, middleEnd) + "-" + digits.substring(middleEnd);
     }
 
     private LocalDate parseBirthDate(String value) {
@@ -162,14 +129,16 @@ public class UserService {
 
         try {
             LocalDate birthDate = LocalDate.parse(trimmed);
-            if (birthDate.isAfter(LocalDate.now())) {
-                throw ApiException.badRequest("BIRTH_DATE_INVALID", "생년월일이 올바르지 않습니다.");
+            if (!birthDate.isAfter(LocalDate.now())) {
+                return birthDate;
             }
-            return birthDate;
-
-        } catch (DateTimeParseException e) {
-            throw ApiException.badRequest("BIRTH_DATE_INVALID", "생년월일이 올바르지 않습니다.");
+        } catch (DateTimeParseException ignored) {
         }
+        throw ApiException.badRequest("BIRTH_DATE_INVALID", "생년월일이 올바르지 않습니다.");
+    }
+
+    private boolean valueOr(Boolean value, Boolean fallback) {
+        return value != null ? value : Boolean.TRUE.equals(fallback);
     }
 
     private String pick(String value, Set<String> allowed, String fallback) {

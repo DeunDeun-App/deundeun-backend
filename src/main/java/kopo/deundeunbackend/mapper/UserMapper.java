@@ -1,5 +1,8 @@
 package kopo.deundeunbackend.mapper;
 
+import java.util.List;
+import kopo.deundeunbackend.domain.Guardian;
+import kopo.deundeunbackend.domain.Notification;
 import kopo.deundeunbackend.domain.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -27,4 +30,14 @@ public interface UserMapper {
                        @Param("sosAlert") boolean sosAlert);
 
     int deleteUser(@Param("userId") Long userId);
+
+    Guardian selectPrimaryGuardian(@Param("userId") Long userId);
+
+    int insertGuardian(Guardian guardian);
+
+    int updateGuardian(Guardian guardian);
+
+    int deleteGuardiansByUserId(@Param("userId") Long userId);
+
+    List<Notification> selectRecentNotifications(@Param("userId") Long userId, @Param("limit") int limit);
 }

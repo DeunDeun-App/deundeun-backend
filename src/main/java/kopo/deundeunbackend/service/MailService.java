@@ -39,7 +39,7 @@ public class MailService {
         JavaMailSender mailSender = enabled ? mailSenderProvider.getIfAvailable() : null;
 
         if (mailSender == null) {
-            log.warn("메일 서버 설정이 없어 발송을 생략합니다: email={}, code={}", to, code);
+            log.warn("메일 서버 설정이 없어 발송을 생략합니다: email={}", to);
             return;
         }
 

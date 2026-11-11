@@ -23,17 +23,11 @@ public class DisasterMessageController {
     @GetMapping
     public ApiResponse<List<DisasterMessageResponse>> getRecentMessages(
             @RequestParam(defaultValue = "false") boolean refresh) {
-
-        List<DisasterMessageResponse> response = disasterMessageService.getRecentMessages(refresh);
-
-        return ApiResponse.ok("최근 재난문자를 불러왔습니다.", response);
+        return ApiResponse.ok("최근 재난문자를 불러왔습니다.", disasterMessageService.getRecentMessages(refresh));
     }
 
     @PostMapping("/{id}/easy")
     public ApiResponse<EasyMessageResponse> toEasyMessage(@PathVariable String id) {
-
-        EasyMessageResponse response = disasterMessageService.toEasyMessage(id);
-
-        return ApiResponse.ok("쉬운 말로 바꿨습니다.", response);
+        return ApiResponse.ok("쉬운 말로 바꿨습니다.", disasterMessageService.toEasyMessage(id));
     }
 }

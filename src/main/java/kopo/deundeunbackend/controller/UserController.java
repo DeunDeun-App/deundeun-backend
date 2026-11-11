@@ -3,8 +3,7 @@ package kopo.deundeunbackend.controller;
 import java.util.List;
 import kopo.deundeunbackend.common.response.ApiResponse;
 import kopo.deundeunbackend.config.LoginInterceptor;
-import kopo.deundeunbackend.dto.request.ProfileUpdateRequest;
-import kopo.deundeunbackend.dto.request.SettingsRequest;
+import kopo.deundeunbackend.dto.request.UserRequest;
 import kopo.deundeunbackend.dto.response.NotificationResponse;
 import kopo.deundeunbackend.dto.response.ProfileResponse;
 import kopo.deundeunbackend.service.UserService;
@@ -27,44 +26,30 @@ public class UserController {
 
     @GetMapping
     public ApiResponse<ProfileResponse> getProfile(@RequestAttribute(LoginInterceptor.USER_ID) Long userId) {
-
-        ProfileResponse response = userService.getProfile(userId);
-
-        return ApiResponse.ok("내 정보를 불러왔습니다.", response);
+        return ApiResponse.ok("내 정보를 불러왔습니다.", userService.getProfile(userId));
     }
 
     @PutMapping
     public ApiResponse<ProfileResponse> updateProfile(@RequestAttribute(LoginInterceptor.USER_ID) Long userId,
-                                                      @RequestBody ProfileUpdateRequest request) {
-
-        ProfileResponse response = userService.updateProfile(userId, request);
-
-        return ApiResponse.ok("저장되었습니다.", response);
+                                                      @RequestBody UserRequest.Profile request) {
+        return ApiResponse.ok("저장되었습니다.", userService.updateProfile(userId, request));
     }
 
     @PatchMapping("/settings")
     public ApiResponse<ProfileResponse> updateSettings(@RequestAttribute(LoginInterceptor.USER_ID) Long userId,
-                                                       @RequestBody SettingsRequest request) {
-
-        ProfileResponse response = userService.updateSettings(userId, request);
-
-        return ApiResponse.ok("설정이 변경되었습니다.", response);
+                                                       @RequestBody UserRequest.Settings request) {
+        return ApiResponse.ok("설정이 변경되었습니다.", userService.updateSettings(userId, request));
     }
 
     @GetMapping("/notifications")
     public ApiResponse<List<NotificationResponse>> getNotifications(
             @RequestAttribute(LoginInterceptor.USER_ID) Long userId) {
-
-        List<NotificationResponse> response = userService.getRecentNotifications(userId);
-
-        return ApiResponse.ok("보호자 알림 내역을 불러왔습니다.", response);
+        return ApiResponse.ok("보호자 알림 내역을 불러왔습니다.", userService.getRecentNotifications(userId));
     }
 
     @DeleteMapping
     public ApiResponse<Void> withdraw(@RequestAttribute(LoginInterceptor.USER_ID) Long userId) {
-
         userService.withdraw(userId);
-
         return ApiResponse.ok("회원탈퇴가 완료되었습니다.", null);
     }
 }

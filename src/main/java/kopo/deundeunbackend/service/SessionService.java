@@ -41,12 +41,16 @@ public class SessionService {
         AuthToken token = findToken(authorization);
 
         if (token == null) {
-            throw ApiException.unauthorized("SESSION_EXPIRED", "로그인이 필요합니다. 다시 로그인해 주세요.");
+            throw sessionExpired();
         }
 
         authTokenMapper.extendExpiry(token.getTokenId(), SESSION_VALID_MINUTES);
 
         return token.getUserId();
+    }
+
+    public static ApiException sessionExpired() {
+        return ApiException.unauthorized("SESSION_EXPIRED", "로그인이 필요합니다. 다시 로그인해 주세요.");
     }
 
     private AuthToken findToken(String authorization) {
