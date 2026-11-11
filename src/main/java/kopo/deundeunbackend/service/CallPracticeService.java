@@ -8,7 +8,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import kopo.deundeunbackend.common.exception.ApiException;
 import kopo.deundeunbackend.common.utils.InputValidator;
-import kopo.deundeunbackend.common.utils.KeywordMatcher;
+import kopo.deundeunbackend.common.utils.KeywordRule;
 import kopo.deundeunbackend.domain.CallItem;
 import kopo.deundeunbackend.domain.CallScenario;
 import kopo.deundeunbackend.domain.SessionResult;
@@ -36,6 +36,9 @@ public class CallPracticeService {
 
     // 질문 하나에 답할 수 있는 횟수. 다 틀리면 실패로 기록하고 다음 질문으로 넘어간다
     private static final int MAX_ATTEMPTS = 2;
+
+    // 주소 질문. 기회 제한 없이 말할 때까지 묻는다
+    private static final String ITEM_TYPE_LOCATION = "LOCATION";
     private static final int ANSWER_MAX_LENGTH = 500;
 
     private static final BigDecimal PASSED_SCORE = BigDecimal.valueOf(100);
@@ -122,12 +125,18 @@ public class CallPracticeService {
         }
 
         SessionResult result = callMapper.selectResult(sessionId, item.getItemId());
+        KeywordRule rule = readRule(item);
+        List<String> previous = result == null ? List.of() : readAnswers(result.getDetailJson());
 
-        if (result != null && (result.isPassed() || result.getAttempts() >= MAX_ATTEMPTS)) {
+        if (result != null && (result.isPassed() || !canAnswerAgain(item, rule, previous))) {
             throw ApiException.conflict("ITEM_ALREADY_JUDGED", "이미 답한 질문입니다.");
         }
 
-        boolean passed = KeywordMatcher.matches(answer, readKeywords(item));
+        List<String> answers = new ArrayList<>(previous);
+        answers.add(answer);
+
+        KeywordRule.Judgement judgement = rule.judge(answers);
+        boolean passed = judgement.passed();
         BigDecimal score = passed ? PASSED_SCORE : BigDecimal.ZERO;
 
         if (result == null) {
@@ -151,10 +160,43 @@ public class CallPracticeService {
             callMapper.updateResult(result);
         }
 
-        boolean retryable = !passed && result.getAttempts() < MAX_ATTEMPTS;
+        boolean retryable = !passed && canAnswerAgain(item, rule, answers);
+
+        // 단서를 일부만 말했으면 빠진 단서를 되묻는다. 아무것도 못 말했으면 도움말을 보여준다
+        String followUp = null;
+        if (retryable && judgement.matched() > 0) {
+            followUp = judgement.missing().stream()
+                    .map(KeywordRule.Part::ask)
+                    .filter(ask -> ask != null && !ask.isBlank())
+                    .findFirst()
+                    .orElse(null);
+        }
 
         return new CallAnswerResponse(passed, result.getAttempts(), retryable,
-                passed ? null : item.getWeakFeedback());
+                passed || followUp != null ? null : item.getWeakFeedback(), followUp);
+    }
+
+    /**
+     * 한 번 더 답할 수 있는지
+     *
+     * 새 단서를 말하지 못한 답변만 기회를 쓴 것으로 센다. 새 단서를 말하면 기회가 줄지 않는다.
+     * 단서가 많아도 끝없이 묻지 않도록 전체 답변 수는 (단서 수 + 기회 수)로 제한한다.
+     * 주소는 구조대가 찾아가는 데 꼭 필요하므로 말할 때까지 계속 묻는다.
+     */
+    private boolean canAnswerAgain(CallItem item, KeywordRule rule, List<String> answers) {
+        if (ITEM_TYPE_LOCATION.equals(item.getItemType())) {
+            return true;
+        }
+        int misses = 0;
+        int matched = 0;
+        for (int i = 0; i < answers.size(); i++) {
+            int now = rule.judge(answers.subList(0, i + 1)).matched();
+            if (now == matched) {
+                misses++;
+            }
+            matched = now;
+        }
+        return misses < MAX_ATTEMPTS && answers.size() < rule.parts().size() + MAX_ATTEMPTS;
     }
 
     /**
@@ -224,12 +266,35 @@ public class CallPracticeService {
         return new ApiException(HttpStatus.CONFLICT, "SESSION_ENDED", "이미 끝난 신고 연습입니다.");
     }
 
-    private List<String> readKeywords(CallItem item) {
+    /** 키워드 JSON 을 통과 규칙으로 읽는다. 배열이면 하나라도, {"parts": [...]} 면 모든 단서를 말해야 통과. */
+    private KeywordRule readRule(CallItem item) {
+        String json = item.getKeywords();
         try {
-            return List.of(objectMapper.readValue(item.getKeywords(), String[].class));
+            if (json != null && json.trim().startsWith("{")) {
+                KeywordRule rule = objectMapper.readValue(json, KeywordRule.class);
+                if (rule.parts() != null && !rule.parts().isEmpty()) {
+                    return rule;
+                }
+            } else if (json != null) {
+                return KeywordRule.anyOf(List.of(objectMapper.readValue(json, String[].class)));
+            }
 
         } catch (JacksonException e) {
             log.error("통과 키워드 형식 오류: itemId={}", item.getItemId(), e);
+        }
+        return KeywordRule.anyOf(List.of());
+    }
+
+    private List<String> readAnswers(String detailJson) {
+        if (detailJson == null) {
+            return List.of();
+        }
+        try {
+            List<String> answers = objectMapper.readValue(detailJson, CallDetail.class).answers();
+            return answers == null ? List.of() : answers;
+
+        } catch (JacksonException e) {
+            log.warn("답변 기록 형식 오류: {}", detailJson);
             return List.of();
         }
     }
