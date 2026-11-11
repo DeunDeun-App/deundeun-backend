@@ -15,6 +15,7 @@ public final class InputValidator {
             Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final Pattern LOGIN_ID_PATTERN = Pattern.compile("^[a-z][a-z0-9]{3,19}$");
     private static final Pattern CODE_PATTERN = Pattern.compile("^\\d{6}$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^01[016789]\\d{7,8}$");
     private static final String SPECIAL_CHARS = "!@#$%^&*()_+-=[]{}|;:'\",.<>/?`~\\";
 
     private InputValidator() {
@@ -64,6 +65,21 @@ public final class InputValidator {
             throw ApiException.badRequest("EMAIL_INVALID", "이메일 주소 형식이 올바르지 않습니다.");
         }
         return email;
+    }
+
+    public static String optionalPhone(String value, String errorCode, String errorMessage) {
+        String phone = trimToNull(value);
+        if (phone == null) {
+            return null;
+        }
+
+        String digits = phone.replaceAll("[\\s-]", "");
+        if (!PHONE_PATTERN.matcher(digits).matches()) {
+            throw ApiException.badRequest(errorCode, errorMessage);
+        }
+
+        int middleEnd = digits.length() == 11 ? 7 : 6;
+        return digits.substring(0, 3) + "-" + digits.substring(3, middleEnd) + "-" + digits.substring(middleEnd);
     }
 
     public static String requireCode(String value) {

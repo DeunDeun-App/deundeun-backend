@@ -35,6 +35,8 @@ public class EmailVerificationService {
     private final Map<String, Verification> verifications = new ConcurrentHashMap<>();
 
     public long sendCode(Purpose purpose, String email) {
+        verifications.values().removeIf(Verification::isExpired);
+
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
 
         verifications.put(key(purpose, email),

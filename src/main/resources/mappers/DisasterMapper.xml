@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.deundeunbackend.mapper.DisasterMapper">
+
+    <select id="selectDisasterTypes" resultType="DisasterType">
+        SELECT disaster_code
+             , disaster_name
+             , easy_name
+             , guide_text
+             , icon
+             , sort_order
+          FROM disaster_types
+         ORDER BY sort_order
+    </select>
+
+    <select id="selectActivePictograms" resultType="Pictogram">
+        SELECT pictogram_code
+             , pictogram_name
+          FROM pictograms
+         WHERE is_active = 1
+         ORDER BY pictogram_code
+    </select>
+
+    <select id="selectTranslationByHash" resultType="MessageTranslation">
+        SELECT translation_id
+             , msg_hash
+             , disaster_code
+             , region
+             , original_text
+             , easy_text
+             , tts_text
+             , action_text
+             , pictogram_codes
+             , received_at
+          FROM message_translations
+         WHERE msg_hash = #{msgHash}
+    </select>
+
+    <insert id="insertTranslation" parameterType="MessageTranslation"
+            useGeneratedKeys="true" keyProperty="translationId">
+        INSERT IGNORE INTO message_translations (
+            msg_hash
+          , disaster_code
+          , region
+          , original_text
+          , easy_text
+          , tts_text
+          , action_text
+          , pictogram_codes
+          , received_at
+        ) VALUES (
+            #{msgHash}
+          , #{disasterCode}
+          , #{region}
+          , #{originalText}
+          , #{easyText}
+          , #{ttsText}
+          , #{actionText}
+          , #{pictogramCodes}
+          , #{receivedAt}
+        )
+    </insert>
+
+</mapper>

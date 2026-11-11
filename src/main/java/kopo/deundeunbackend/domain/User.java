@@ -44,11 +44,15 @@ public class User {
     // 성별
     private String gender;
 
+    private String disabilityType;
+
     // 장애 정도
     private String severity;
 
     // 집주소
     private String address;
+
+    private Boolean isShareLocation;
 
     // 훈련 결과 공유 여부
     private Boolean isShareResult;
