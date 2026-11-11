@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.deundeunbackend.mapper.SosMapper">
+
+    <select id="selectSosAlert" resultType="boolean">
+        SELECT is_sos_alert
+          FROM users
+         WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectNotifyGuardians" resultType="Guardian">
+        SELECT guardian_id
+             , user_id
+             , guardian_name
+             , guardian_phone
+             , guardian_relation
+             , guardian_priority
+             , is_notify
+          FROM guardians
+         WHERE user_id = #{userId}
+           AND is_notify = 1
+         ORDER BY guardian_priority, guardian_id
+    </select>
+
+    <insert id="insertSosEvent" parameterType="SosEvent"
+            useGeneratedKeys="true" keyProperty="sosId">
+        INSERT INTO sos_events (
+            user_id
+          , lat
+          , lng
+          , checklist_json
+          , send_msg
+        ) VALUES (
+            #{userId}
+          , #{lat}
+          , #{lng}
+          , #{checklistJson}
+          , #{sendMsg}
+        )
+    </insert>
+
+    <select id="selectSosEvent" resultType="SosEvent">
+        SELECT sos_id
+             , user_id
+             , lat
+             , lng
+             , checklist_json
+             , send_msg
+             , send_at
+          FROM sos_events
+         WHERE sos_id = #{sosId}
+    </select>
+
+    <insert id="insertNotification" parameterType="Notification"
+            useGeneratedKeys="true" keyProperty="notiId">
+        INSERT INTO notifications (
+            user_id
+          , guardian_id
+          , sos_id
+          , noti_type
+          , channel
+          , title
+          , body
+        ) VALUES (
+            #{userId}
+          , #{guardianId}
+          , #{sosId}
+          , #{notiType}
+          , #{channel}
+          , #{title}
+          , #{body}
+        )
+    </insert>
+
+    <update id="updateSendAt">
+        UPDATE sos_events
+           SET send_at = NOW()
+         WHERE sos_id = #{sosId}
+           AND send_at IS NULL
+    </update>
+
+    <update id="updateNotificationsSent">
+        UPDATE notifications
+           SET status = 'SENT'
+             , sent_at = NOW()
+         WHERE sos_id = #{sosId}
+           AND status = 'PENDING'
+    </update>
+</mapper>
