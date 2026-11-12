@@ -22,8 +22,10 @@ public class DisasterMessageController {
 
     @GetMapping
     public ApiResponse<List<DisasterMessageResponse>> getRecentMessages(
-            @RequestParam(defaultValue = "false") boolean refresh) {
-        return ApiResponse.ok("최근 재난문자를 불러왔습니다.", disasterMessageService.getRecentMessages(refresh));
+            @RequestParam(defaultValue = "false") boolean refresh,
+            @RequestParam(required = false) String region) {
+        return ApiResponse.ok("최근 재난문자를 불러왔습니다.",
+                disasterMessageService.getRecentMessages(refresh, region));
     }
 
     @PostMapping("/{id}/easy")
