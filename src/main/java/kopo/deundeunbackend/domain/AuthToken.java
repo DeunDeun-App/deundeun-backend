@@ -16,6 +16,8 @@ public class AuthToken {
 
     public static final String TYPE_PASSWORD_RESET = "PASSWORD_RESET";
 
+    public static final String TYPE_LOGIN = "LOGIN";
+
     private Long tokenId;
 
     private Long userId;

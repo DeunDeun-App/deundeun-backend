@@ -40,4 +40,10 @@
            AND used_at IS NULL
     </update>
 
+    <update id="extendExpiry">
+        UPDATE auth_tokens
+           SET expires_at = NOW() + INTERVAL #{validMinutes} MINUTE
+         WHERE token_id = #{tokenId}
+    </update>
+
 </mapper>

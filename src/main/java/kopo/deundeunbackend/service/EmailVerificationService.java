@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class EmailVerificationService {
 
     public enum Purpose {
-        SIGNUP("회원가입"), PASSWORD_RESET("비밀번호 찾기");
+        SIGNUP("회원가입"), FIND_LOGIN_ID("아이디 찾기"), PASSWORD_RESET("비밀번호 찾기");
 
         private final String displayName;
 
@@ -35,6 +35,8 @@ public class EmailVerificationService {
     private final Map<String, Verification> verifications = new ConcurrentHashMap<>();
 
     public long sendCode(Purpose purpose, String email) {
+        verifications.values().removeIf(Verification::isExpired);
+
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
 
         verifications.put(key(purpose, email),

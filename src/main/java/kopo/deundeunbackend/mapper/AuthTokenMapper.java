@@ -13,4 +13,6 @@ public interface AuthTokenMapper {
                                 @Param("tokenType") String tokenType);
 
     int markUsed(@Param("tokenId") Long tokenId);
+
+    int extendExpiry(@Param("tokenId") Long tokenId, @Param("validMinutes") int validMinutes);
 }

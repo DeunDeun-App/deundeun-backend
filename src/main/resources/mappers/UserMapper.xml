@@ -4,9 +4,9 @@
 
 <mapper namespace="kopo.deundeunbackend.mapper.UserMapper">
 
-    <!--로그인 검증용 조회-->
-    <select id="selectByEmail" resultType="User">
+    <sql id="userColumns">
         SELECT user_id
+             , login_id
              , email
              , pw_hash
              , pw_salt
@@ -14,39 +14,50 @@
              , user_phone
              , birth_date
              , gender
+             , disability_type
              , severity
              , address
+             , is_share_location
              , is_share_result
              , is_sos_alert
              , created_at
              , updated_at
           FROM users
+    </sql>
+
+    <select id="selectByEmail" resultType="User">
+        <include refid="userColumns"/>
          WHERE email = #{email}
+    </select>
+
+    <select id="selectByLoginId" resultType="User">
+        <include refid="userColumns"/>
+         WHERE login_id = #{loginId}
+    </select>
+
+    <select id="selectByUserId" resultType="User">
+        <include refid="userColumns"/>
+         WHERE user_id = #{userId}
     </select>
 
     <insert id="insertUser" parameterType="User"
             useGeneratedKeys="true" keyProperty="userId">
         INSERT INTO users (
-            email
+            login_id
+          , email
           , pw_hash
           , pw_salt
           , user_name
           , user_phone
         ) VALUES (
-            #{email}
+            #{loginId}
+          , #{email}
           , #{pwHash}
           , #{pwSalt}
           , #{userName}
           , #{userPhone}
         )
     </insert>
-
-    <update id="updatePassword">
-        UPDATE users
-           SET pw_hash = #{pwHash}
-             , pw_salt = #{pwSalt}
-         WHERE email = #{email}
-    </update>
 
     <update id="updatePasswordByUserId">
         UPDATE users
@@ -55,5 +66,87 @@
              , updated_at = NOW()
          WHERE user_id = #{userId}
     </update>
+
+    <update id="updateProfile" parameterType="User">
+        UPDATE users
+           SET user_name = #{userName}
+             , user_phone = #{userPhone}
+             , birth_date = #{birthDate}
+             , disability_type = #{disabilityType}
+             , severity = #{severity}
+             , updated_at = NOW()
+         WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateSettings">
+        UPDATE users
+           SET is_share_location = #{shareLocation}
+             , is_share_result = #{shareResult}
+             , is_sos_alert = #{sosAlert}
+             , updated_at = NOW()
+         WHERE user_id = #{userId}
+    </update>
+
+    <delete id="deleteUser">
+        DELETE FROM users
+         WHERE user_id = #{userId}
+    </delete>
+
+    <select id="selectPrimaryGuardian" resultType="Guardian">
+        SELECT guardian_id
+             , user_id
+             , guardian_name
+             , guardian_phone
+             , guardian_relation
+             , guardian_priority
+             , is_notify
+             , created_at
+          FROM guardians
+         WHERE user_id = #{userId}
+         ORDER BY guardian_priority, guardian_id
+         LIMIT 1
+    </select>
+
+    <insert id="insertGuardian" parameterType="Guardian"
+            useGeneratedKeys="true" keyProperty="guardianId">
+        INSERT INTO guardians (
+            user_id
+          , guardian_name
+          , guardian_phone
+          , guardian_relation
+        ) VALUES (
+            #{userId}
+          , #{guardianName}
+          , #{guardianPhone}
+          , #{guardianRelation}
+        )
+    </insert>
+
+    <update id="updateGuardian" parameterType="Guardian">
+        UPDATE guardians
+           SET guardian_name = #{guardianName}
+             , guardian_phone = #{guardianPhone}
+             , guardian_relation = #{guardianRelation}
+         WHERE guardian_id = #{guardianId}
+           AND user_id = #{userId}
+    </update>
+
+    <delete id="deleteGuardiansByUserId">
+        DELETE FROM guardians
+         WHERE user_id = #{userId}
+    </delete>
+
+    <select id="selectRecentNotifications" resultType="Notification">
+        SELECT noti_id
+             , noti_type
+             , title
+             , body
+             , status
+             , created_at
+          FROM notifications
+         WHERE user_id = #{userId}
+         ORDER BY created_at DESC, noti_id DESC
+         LIMIT #{limit}
+    </select>
 
 </mapper>

@@ -1,5 +1,6 @@
 package kopo.deundeunbackend.common.utils;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 import kopo.deundeunbackend.common.exception.ApiException;
 
@@ -12,7 +13,9 @@ public final class InputValidator {
 
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern LOGIN_ID_PATTERN = Pattern.compile("^[a-z][a-z0-9]{3,19}$");
     private static final Pattern CODE_PATTERN = Pattern.compile("^\\d{6}$");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^01[016789]\\d{7,8}$");
     private static final String SPECIAL_CHARS = "!@#$%^&*()_+-=[]{}|;:'\",.<>/?`~\\";
 
     private InputValidator() {
@@ -39,6 +42,19 @@ public final class InputValidator {
         return name;
     }
 
+    public static String requireLoginId(String value) {
+        String loginId = trimToNull(value);
+
+        if (loginId == null) {
+            throw ApiException.badRequest("LOGIN_ID_REQUIRED", "아이디를 입력해 주세요.");
+        }
+        loginId = loginId.toLowerCase(Locale.ROOT);
+        if (!LOGIN_ID_PATTERN.matcher(loginId).matches()) {
+            throw ApiException.badRequest("LOGIN_ID_INVALID", "아이디는 영문으로 시작하는 4~20자의 영문, 숫자로 입력해 주세요.");
+        }
+        return loginId;
+    }
+
     public static String requireEmail(String value) {
         String email = trimToNull(value);
 
@@ -49,6 +65,21 @@ public final class InputValidator {
             throw ApiException.badRequest("EMAIL_INVALID", "이메일 주소 형식이 올바르지 않습니다.");
         }
         return email;
+    }
+
+    public static String optionalPhone(String value, String errorCode, String errorMessage) {
+        String phone = trimToNull(value);
+        if (phone == null) {
+            return null;
+        }
+
+        String digits = phone.replaceAll("[\\s-]", "");
+        if (!PHONE_PATTERN.matcher(digits).matches()) {
+            throw ApiException.badRequest(errorCode, errorMessage);
+        }
+
+        int middleEnd = digits.length() == 11 ? 7 : 6;
+        return digits.substring(0, 3) + "-" + digits.substring(3, middleEnd) + "-" + digits.substring(middleEnd);
     }
 
     public static String requireCode(String value) {

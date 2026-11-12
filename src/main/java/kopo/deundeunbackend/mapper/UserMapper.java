@@ -1,5 +1,8 @@
 package kopo.deundeunbackend.mapper;
 
+import java.util.List;
+import kopo.deundeunbackend.domain.Guardian;
+import kopo.deundeunbackend.domain.Notification;
 import kopo.deundeunbackend.domain.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -7,35 +10,34 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface UserMapper {
 
-    /**
-     * 회원 조회
-     *
-     * @param email 조회할 이메일
-     * @return 회원. 없으면 null
-     */
     User selectByEmail(@Param("email") String email);
 
-    /**
-     * 회원 등록
-     *
-     * @param user 등록할 회원
-     * @return 등록된 행 수
-     */
-    int insertUser(User user);
+    User selectByLoginId(@Param("loginId") String loginId);
 
-    /**
-     * 회원 비밀번호 해시, 솔트 업데이트
-     *
-     * @param email  대상 회원의 이메일
-     * @param pwHash 새 해시
-     * @param pwSalt 새 솔트
-     * @return 변경된 행 수
-     */
-    int updatePassword(@Param("email") String email,
-                       @Param("pwHash") String pwHash,
-                       @Param("pwSalt") String pwSalt);
+    User selectByUserId(@Param("userId") Long userId);
+
+    int insertUser(User user);
 
     int updatePasswordByUserId(@Param("userId") Long userId,
                                @Param("pwHash") String pwHash,
                                @Param("pwSalt") String pwSalt);
+
+    int updateProfile(User user);
+
+    int updateSettings(@Param("userId") Long userId,
+                       @Param("shareLocation") boolean shareLocation,
+                       @Param("shareResult") boolean shareResult,
+                       @Param("sosAlert") boolean sosAlert);
+
+    int deleteUser(@Param("userId") Long userId);
+
+    Guardian selectPrimaryGuardian(@Param("userId") Long userId);
+
+    int insertGuardian(Guardian guardian);
+
+    int updateGuardian(Guardian guardian);
+
+    int deleteGuardiansByUserId(@Param("userId") Long userId);
+
+    List<Notification> selectRecentNotifications(@Param("userId") Long userId, @Param("limit") int limit);
 }
