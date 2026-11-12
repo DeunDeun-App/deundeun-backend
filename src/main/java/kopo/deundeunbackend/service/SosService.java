@@ -12,6 +12,7 @@ import kopo.deundeunbackend.dto.request.SosRequest;
 import kopo.deundeunbackend.dto.response.GuardianResponse;
 import kopo.deundeunbackend.dto.response.SosResponse;
 import kopo.deundeunbackend.mapper.SosMapper;
+import kopo.deundeunbackend.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,8 @@ public class SosService {
     private static final BigDecimal LNG_LIMIT = BigDecimal.valueOf(180);
 
     private final SosMapper sosMapper;
+
+    private final UserMapper userMapper;
 
     private final SessionService sessionService;
 
@@ -79,6 +82,9 @@ public class SosService {
 
         String checklistJson = toChecklistJson(request);
         validateLocation(request.lat(), request.lng());
+        boolean shareLocation = Boolean.TRUE.equals(userMapper.selectByUserId(userId).getIsShareLocation());
+        BigDecimal lat = shareLocation ? request.lat() : null;
+        BigDecimal lng = shareLocation ? request.lng() : null;
 
         String message = InputValidator.trimToNull(request.message());
         if (message == null) {
@@ -90,8 +96,8 @@ public class SosService {
 
         SosEvent sosEvent = SosEvent.builder()
                 .userId(userId)
-                .lat(request.lat())
-                .lng(request.lng())
+                .lat(lat)
+                .lng(lng)
                 .checklistJson(checklistJson)
                 .sendMsg(message)
                 .build();
@@ -110,7 +116,7 @@ public class SosService {
         }
 
         log.info("SOS 요청: userId={}, sosId={}, guardians={}, hasLocation={}",
-                userId, sosEvent.getSosId(), guardians.size(), request.lat() != null);
+                userId, sosEvent.getSosId(), guardians.size(), lat != null);
 
         List<String> phones = guardians.stream().map(Guardian::getGuardianPhone).toList();
         return new SosResponse(sosEvent.getSosId(), phones);
