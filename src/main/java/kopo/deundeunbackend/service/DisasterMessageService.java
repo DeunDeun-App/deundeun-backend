@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import kopo.deundeunbackend.client.DisasterMessageClient;
 import kopo.deundeunbackend.client.GeminiClient;
 import kopo.deundeunbackend.common.exception.ApiException;
+import kopo.deundeunbackend.common.utils.RegionMatcher;
 import kopo.deundeunbackend.domain.DisasterMessage;
 import kopo.deundeunbackend.domain.DisasterType;
 import kopo.deundeunbackend.domain.MessageTranslation;
@@ -68,8 +69,9 @@ public class DisasterMessageService {
 
     private final JsonMapper jsonMapper;
 
-    public List<DisasterMessageResponse> getRecentMessages(boolean refresh) {
+    public List<DisasterMessageResponse> getRecentMessages(boolean refresh, String region) {
         return disasterMessageClient.fetchRecent(refresh).stream()
+                .filter(message -> RegionMatcher.matches(message.region(), region))
                 .limit(RECENT_LIMIT)
                 .map(DisasterMessageResponse::from)
                 .toList();
