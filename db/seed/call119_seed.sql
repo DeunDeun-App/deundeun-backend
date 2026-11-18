@@ -4,6 +4,7 @@
 -- 사용법
 --   deundeun DB 에 접속해서 이 파일을 그대로 실행
 --   같은 제목의 시나리오나 같은 순서의 질문이 이미 있으면 건너뛰므로 여러 번 실행해도 됨
+--   배점은 맨 끝에서 지금 기준으로 다시 맞춘다
 --
 -- 키워드 작성 요령
 --   - JSON 배열로 적는다. 서버는 공백을 뺀 답변에 키워드가 하나라도 있으면 통과로 본다
@@ -170,3 +171,18 @@ SELECT * FROM (
                      FROM call_simulator s
                     WHERE s.call_scenario_id = items.call_scenario_id
                       AND s.item_order = items.item_order);
+
+-- 배점 맞추기 ------------------------------------------------------------------
+-- 위 INSERT 는 이미 있는 질문을 건너뛰므로, 예전 배점(30/40/30)으로 들어간 DB 도
+-- 지금 배점(상황 40 / 주소 40 / 상태 20)이 되도록 맞춘다. 여러 번 실행해도 결과는 같다
+
+UPDATE call_simulator s
+  JOIN call_scenarios c
+    ON c.call_scenario_id = s.call_scenario_id
+   SET s.score = CASE s.item_type
+                   WHEN 'SITUATION' THEN 40
+                   WHEN 'LOCATION'  THEN 40
+                   WHEN 'INJURY'    THEN 20
+                   ELSE s.score
+                 END
+ WHERE c.call_title IN ('화재 신고', '지진 신고', '홍수 신고');
