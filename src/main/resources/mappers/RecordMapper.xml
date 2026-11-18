@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.deundeunbackend.mapper.RecordMapper">
+
+    <sql id="endedSessions">
+          FROM training_sessions t
+          LEFT JOIN call_scenarios c
+            ON c.call_scenario_id = t.call_scenario_id
+          LEFT JOIN pose_scenarios p
+            ON p.pose_scenario_id = t.pose_scenario_id
+         WHERE t.user_id = #{userId}
+           AND t.ended_at IS NOT NULL
+           AND t.training_type IN ('CALL119', 'POSE')
+    </sql>
+
+    <select id="selectSessions" resultType="RecordSession">
+        SELECT t.session_id
+             , t.training_type
+             , COALESCE(c.call_title, p.pose_title) AS scenario_title
+             , t.started_at
+             , t.score
+        <include refid="endedSessions"/>
+        <if test="trainingType != null">
+           AND t.training_type = #{trainingType}
+        </if>
+         ORDER BY t.started_at DESC, t.session_id DESC
+         LIMIT #{limit}
+    </select>
+
+    <select id="selectSessionsSince" resultType="RecordSession">
+        SELECT t.session_id
+             , t.training_type
+             , t.started_at
+             , t.ended_at
+        <include refid="endedSessions"/>
+           AND t.started_at &gt;= #{from}
+    </select>
+
+    <!-- 신고 연습은 시나리오의 질문을 기준으로 붙여서, 답하지 않은 질문도 못 한 것으로 나온다 -->
+    <select id="selectKeywords" resultType="RecordKeyword">
+        SELECT t.session_id
+             , t.training_type
+             , q.item_order
+             , q.label
+             , q.stat_label
+             , q.weak_feedback AS feedback
+             , COALESCE(r.score &gt; 0, FALSE) AS passed
+          FROM training_sessions t
+          JOIN call_simulator q
+            ON q.call_scenario_id = t.call_scenario_id
+          LEFT JOIN session_results r
+            ON r.session_id = t.session_id
+           AND r.call_item_id = q.item_id
+         WHERE t.user_id = #{userId}
+           AND t.ended_at IS NOT NULL
+           AND t.training_type = 'CALL119'
+        <if test="sessionIds != null">
+           AND t.session_id IN
+            <foreach collection="sessionIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+
+        UNION ALL
+
+        SELECT t.session_id
+             , t.training_type
+             , s.step_order
+             , s.label
+             , s.label
+             , s.weak_feedback
+             , COALESCE(JSON_VALUE(r.detail_json, '$.passed') IN ('true', '1'), FALSE)
+          FROM training_sessions t
+          JOIN session_results r
+            ON r.session_id = t.session_id
+          JOIN pose_steps s
+            ON s.pose_step_id = r.pose_step_id
+         WHERE t.user_id = #{userId}
+           AND t.ended_at IS NOT NULL
+           AND t.training_type = 'POSE'
+        <if test="sessionIds != null">
+           AND t.session_id IN
+            <foreach collection="sessionIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+
+         ORDER BY session_id, item_order
+    </select>
+
+</mapper>

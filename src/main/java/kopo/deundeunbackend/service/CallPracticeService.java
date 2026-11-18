@@ -219,7 +219,7 @@ public class CallPracticeService {
         boolean weighted = !items.isEmpty() && items.stream().allMatch(item -> item.getScore() != null);
 
         int totalWeight = 0;
-        int passedWeight = 0;
+        float earned = 0;
         List<CallItemResultResponse> results = new ArrayList<>();
 
         for (CallItem item : items) {
@@ -229,14 +229,14 @@ public class CallPracticeService {
 
             totalWeight += weight;
             if (passed) {
-                passedWeight += weight;
+                earned += weight * passedRatio(result.getAttempts());
             }
 
             results.add(new CallItemResultResponse(item.getItemId(), item.getLabel(),
                     item.getStatLabel(), passed));
         }
 
-        int score = totalWeight == 0 ? 0 : Math.round(passedWeight * 100f / totalWeight);
+        int score = totalWeight == 0 ? 0 : Math.round(earned * 100f / totalWeight);
 
         if (callMapper.endSession(sessionId, score) != 1) {
             throw sessionEnded();
@@ -245,6 +245,19 @@ public class CallPracticeService {
         log.info("신고 연습 종료: sessionId={}, score={}", sessionId, score);
 
         return new CallResultResponse(score, results);
+    }
+
+    /**
+     * 통과한 질문의 배점 중 받는 비율. 한 번에 말하면 전부, 되물을수록 줄어든다
+     *
+     * @param attempts 답한 횟수. 1 이면 한 번에 말한 것
+     */
+    static float passedRatio(Integer attempts) {
+        int asked = attempts == null ? 0 : attempts - 1;
+        if (asked <= 0) {
+            return 1f;
+        }
+        return asked == 1 ? 0.7f : 0.4f;
     }
 
     // 다른 회원의 세션은 없는 세션처럼 처리한다

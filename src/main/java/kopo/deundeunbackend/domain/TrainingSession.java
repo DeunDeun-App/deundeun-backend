@@ -20,6 +20,8 @@ public class TrainingSession {
 
     public static final String TYPE_CALL119 = "CALL119";
 
+    public static final String TYPE_POSE = "POSE";
+
     // 세션 번호 (PK)
     private Long sessionId;
 
@@ -28,6 +30,9 @@ public class TrainingSession {
 
     // 훈련 종류
     private String trainingType;
+
+    // 자세 시나리오 번호 (재난 시뮬레이션)
+    private Long poseScenarioId;
 
     // 신고 시나리오 번호
     private Long callScenarioId;
