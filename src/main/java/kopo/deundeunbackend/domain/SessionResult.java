@@ -19,6 +19,8 @@ public class SessionResult {
 
     public static final String TYPE_CALL_ITEM = "CALL_ITEM";
 
+    public static final String TYPE_POSE_STEP = "POSE_STEP";
+
     // 결과 번호 (PK)
     private Long resultId;
 
@@ -28,13 +30,16 @@ public class SessionResult {
     // 결과 구분
     private String resultType;
 
+    // 자세 단계 번호 (재난 시뮬레이션)
+    private Long poseStepId;
+
     // 신고 항목 번호
     private Long callItemId;
 
     // 항목 순서
     private Integer itemOrder;
 
-    // 항목 점수. 통과 100, 실패 0
+    // 항목 점수. 신고 연습은 통과 100, 실패 0. 시뮬레이션은 받은 점수
     private BigDecimal score;
 
     // 답한 횟수
