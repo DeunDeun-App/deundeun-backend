@@ -22,8 +22,12 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * 재난 시뮬레이션 결과 채점과 저장
  *
- * 100점 만점. 빠른 반응이 20점이고, 나머지 80점은 동작 키워드끼리 똑같이 나눈다
- * (지진: 웅크리기 40 + 머리 보호 40, 화재: 코·입 막기 80).
+ * 100점 만점 = 동작 80점 + 시간 20점 − 잘못 고른 감점
+ * - 동작 80점은 동작 키워드끼리 똑같이 나눈다 (지진: 웅크리기 40 + 머리 보호 40, 화재: 코·입 막기 80)
+ * - 시간: {@link #FAST_MS} 안에 성공하면 +20, {@link #SLOW_MS} 안이면 0, 그보다 늦으면 −20
+ * - 이야기 고르기 장면에서 잘못 고를 때마다 {@link #WRONG_CHOICE_PENALTY} 점씩,
+ *   최대 {@link #MAX_CHOICE_PENALTY} 점까지 깎는다
+ * 총점은 0점 아래로 내려가지 않는다.
  */
 @Slf4j
 @Service
@@ -35,7 +39,15 @@ public class SimulationService {
             "EARTHQUAKE", "지진 대피",
             "FIRE", "화재 대피");
 
-    private static final int QUICK_SCORE = 20;
+    // 시간 점수. 빨리 하면 더 주고, 너무 늦으면 깎는다
+    static final int TIME_BONUS = 20;
+    static final int SLOW_PENALTY = 20;
+    static final long FAST_MS = 30_000L;
+    static final long SLOW_MS = 60_000L;
+
+    // 잘못 고른 한 번에 깎는 점수와 최대로 깎는 점수 (고르기 장면 3개)
+    static final int WRONG_CHOICE_PENALTY = 10;
+    static final int MAX_CHOICE_PENALTY = 30;
 
     // 앱 제한 시간보다 넉넉히 잡은 걸린 시간 상한
     private static final long MAX_ELAPSED_MS = 10 * 60 * 1000L;
@@ -81,8 +93,8 @@ public class SimulationService {
         Set<String> done = request.passedSteps() == null ? Set.of() : Set.copyOf(request.passedSteps());
 
         long moves = steps.stream().filter(step -> !PoseStep.NAME_QUICK.equals(step.getStepName())).count();
-        int quickScore = moves == steps.size() ? 0 : QUICK_SCORE;
-        float moveScore = moves == 0 ? 0 : (100f - quickScore) / moves;
+        int timeBonus = moves == steps.size() ? 0 : TIME_BONUS;
+        float moveScore = moves == 0 ? 0 : (100f - timeBonus) / moves;
 
         List<SessionResult> results = new ArrayList<>();
         List<KeywordResponse> keywords = new ArrayList<>();
@@ -93,8 +105,9 @@ public class SimulationService {
             boolean passed;
 
             if (PoseStep.NAME_QUICK.equals(step.getStepName())) {
-                score = quickScore * quickRatio(success, elapsedMs);
+                // 시간 키워드는 30초 안에 성공했을 때만 점수를 준다. 늦은 감점은 총점에서 깎는다
                 passed = quickPassed(success, elapsedMs);
+                score = passed ? timeBonus : 0;
             } else {
                 // 성공했으면 모든 동작을 해낸 것이다. 실패했으면 한 번이라도 해낸 동작만 인정한다
                 passed = success || done.contains(step.getStepName());
@@ -114,7 +127,8 @@ public class SimulationService {
                     passed ? null : step.getWeakFeedback()));
         }
 
-        int score = Math.round(total);
+        int score = Math.max(0, Math.round(total) - slowPenalty(success, elapsedMs)
+                - choicePenalty(request.wrongChoices()));
         TrainingSession session = TrainingSession.builder()
                 .userId(userId)
                 .trainingType(TrainingSession.TYPE_POSE)
@@ -128,25 +142,27 @@ public class SimulationService {
             simulationMapper.insertResult(result);
         }
 
-        log.info("시뮬레이션 결과 저장: userId={}, sessionId={}, disaster={}, score={}",
-                userId, session.getSessionId(), request.disaster(), score);
+        log.info("시뮬레이션 결과 저장: userId={}, sessionId={}, disaster={}, score={}, wrongChoices={}",
+                userId, session.getSessionId(), request.disaster(), score, request.wrongChoices());
 
         return new SimulationResultResponse(session.getSessionId(), score, keywords);
     }
 
-    /** 빠른 반응 배점 중 받는 비율. 10초 안 전부, 30초 안 75%, 그 뒤 성공 50%, 실패 0 */
-    static float quickRatio(boolean success, long elapsedMs) {
-        if (!success) {
-            return 0f;
+    /** 잘못 고른 횟수만큼 깎을 점수 */
+    static int choicePenalty(Integer wrongChoices) {
+        if (wrongChoices == null || wrongChoices <= 0) {
+            return 0;
         }
-        if (elapsedMs <= 10_000L) {
-            return 1f;
-        }
-        return elapsedMs <= 30_000L ? 0.75f : 0.5f;
+        return Math.min(MAX_CHOICE_PENALTY, wrongChoices * WRONG_CHOICE_PENALTY);
     }
 
     /** 30초 안에 성공해야 빠른 반응으로 본다 */
     static boolean quickPassed(boolean success, long elapsedMs) {
-        return success && elapsedMs <= 30_000L;
+        return success && elapsedMs <= FAST_MS;
+    }
+
+    /** 60초가 지나서 성공했으면 깎는 점수. 끝내 못 했을 때는 해낸 동작만 받으므로 따로 깎지 않는다 */
+    static int slowPenalty(boolean success, long elapsedMs) {
+        return success && elapsedMs > SLOW_MS ? SLOW_PENALTY : 0;
     }
 }
