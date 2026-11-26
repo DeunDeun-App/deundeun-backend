@@ -54,8 +54,6 @@ public class SimulationService {
 
     private final SimulationMapper simulationMapper;
 
-    private final SessionService sessionService;
-
     private final ObjectMapper objectMapper;
 
     /** 키워드 하나의 채점 결과. {@code session_results.detail_json} 에 저장한다. */
@@ -63,17 +61,8 @@ public class SimulationService {
 
     }
 
-    /**
-     * 시뮬레이션 1회 결과를 채점하고 저장
-     *
-     * @param authorization 로그인 토큰 ("Bearer ...")
-     * @param request       재난 종류, 성공 여부, 걸린 시간, 해낸 동작
-     * @return 총점과 키워드별 결과
-     */
     @Transactional
-    public SimulationResultResponse saveResult(String authorization, SimulationRequest request) {
-        Long userId = sessionService.requireUserId(authorization);
-
+    public SimulationResultResponse saveResult(Long userId, SimulationRequest request) {
         String title = request == null || request.disaster() == null
                 ? null : SCENARIO_TITLES.get(request.disaster());
         if (title == null) {

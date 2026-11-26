@@ -4,14 +4,6 @@
 
 <mapper namespace="kopo.deundeunbackend.mapper.CallMapper">
 
-    <select id="existsUser" resultType="boolean">
-        SELECT EXISTS (
-            SELECT 1
-              FROM users
-             WHERE user_id = #{userId}
-        )
-    </select>
-
     <select id="selectRandomScenario" resultType="CallScenario">
         SELECT s.call_scenario_id
              , s.call_title
