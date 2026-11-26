@@ -54,9 +54,6 @@ public class User {
 
     private Boolean isShareLocation;
 
-    // 훈련 결과 공유 여부
-    private Boolean isShareResult;
-
     // SOS 알림 수신 여부
     private Boolean isSosAlert;
 
