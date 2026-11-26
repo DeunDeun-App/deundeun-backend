@@ -26,7 +26,6 @@ public interface UserMapper {
 
     int updateSettings(@Param("userId") Long userId,
                        @Param("shareLocation") boolean shareLocation,
-                       @Param("shareResult") boolean shareResult,
                        @Param("sosAlert") boolean sosAlert);
 
     int deleteUser(@Param("userId") Long userId);

@@ -5,7 +5,7 @@ import kopo.deundeunbackend.domain.User;
 
 public record ProfileResponse(String loginId, String email, String name, String phone, String birthDate,
                               String disabilityType, String severity, boolean shareLocation,
-                              boolean shareResult, boolean sosAlert, GuardianInfo guardian) {
+                              boolean sosAlert, GuardianInfo guardian) {
 
     public static ProfileResponse of(User user, Guardian guardian) {
         return new ProfileResponse(
@@ -17,7 +17,6 @@ public record ProfileResponse(String loginId, String email, String name, String 
                 user.getDisabilityType(),
                 user.getSeverity(),
                 Boolean.TRUE.equals(user.getIsShareLocation()),
-                Boolean.TRUE.equals(user.getIsShareResult()),
                 Boolean.TRUE.equals(user.getIsSosAlert()),
                 guardian == null ? null
                         : new GuardianInfo(guardian.getGuardianRelation(), guardian.getGuardianName(),
