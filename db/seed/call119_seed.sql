@@ -4,6 +4,7 @@
 -- 사용법
 --   deundeun DB 에 접속해서 이 파일을 그대로 실행
 --   같은 제목의 시나리오나 같은 순서의 질문이 이미 있으면 건너뛰므로 여러 번 실행해도 됨
+--   배점은 맨 끝에서 지금 기준으로 다시 맞춘다
 --
 -- 키워드 작성 요령
 --   - JSON 배열로 적는다. 서버는 공백을 뺀 답변에 키워드가 하나라도 있으면 통과로 본다
@@ -48,7 +49,7 @@ SELECT * FROM (
          , '집에 불이 났어요.' AS answer
          , '{"parts": [{"words": ["불", "화재", "타고", "탔", "타요", "불길"], "ask": "어떤 일이 일어났는지 조금 더 말해 주세요."}, {"words": ["연기", "냄새", "매워", "매캐"], "ask": "불 말고 또 보이는 게 있나요?"}]}' AS keywords
          , '무슨 일이 생겼는지 말해주세요.\n예) "부엌에 불이 나서 연기가 나요"' AS weak_feedback
-         , 30 AS score
+         , 40 AS score
     UNION ALL
     SELECT @fire_id, 2, 'LOCATION', '주소', '주소 말하기'
          , '정확한 주소를 말씀해주시겠어요?'
@@ -62,7 +63,7 @@ SELECT * FROM (
          , '다친 사람은 없어요.'
          , '["다쳤", "다친", "다치", "부상", "아파", "아프", "피가", "괜찮", "없", "있어", "있습", "있다", "네", "예", "응", "아니", "명", "아무도"]'
          , '다친 사람이 있는지 말해주세요.\n예) "네, 한 명 다쳤어요", "다친 사람은 없어요"'
-         , 30
+         , 20
 ) AS items
  WHERE NOT EXISTS (SELECT 1
                      FROM call_simulator s
@@ -99,7 +100,7 @@ SELECT * FROM (
          , '지진이 나서 건물이 무너졌어요.' AS answer
          , '{"parts": [{"words": ["지진", "흔들", "진동"], "ask": "땅은 어떤가요?"}, {"words": ["무너", "붕괴", "깔렸", "깔려", "갈라", "금이", "부서"], "ask": "주변 건물은 어떤가요?"}]}' AS keywords
          , '무슨 일이 생겼는지 말해주세요.\n예) "땅이 흔들리고 건물이 무너졌어요"' AS weak_feedback
-         , 30 AS score
+         , 40 AS score
     UNION ALL
     SELECT @quake_id, 2, 'LOCATION', '주소', '주소 말하기'
          , '정확한 주소를 말씀해주시겠어요?'
@@ -113,7 +114,7 @@ SELECT * FROM (
          , '한 명이 갇혀 있어요.'
          , '["갇혔", "갇혀", "갇힌", "깔렸", "깔려", "못 나", "못나", "다쳤", "다친", "다치", "부상", "아파", "아프", "피가", "괜찮", "없", "있어", "있습", "있다", "네", "예", "응", "아니", "명", "아무도"]'
          , '갇히거나 다친 사람이 있는지 말해주세요.\n예) "한 명이 갇혀 있어요", "다친 사람은 없어요"'
-         , 30
+         , 20
 ) AS items
  WHERE NOT EXISTS (SELECT 1
                      FROM call_simulator s
@@ -150,7 +151,7 @@ SELECT * FROM (
          , '집에 물이 차고 있어요.' AS answer
          , '{"parts": [{"words": ["비", "폭우", "장마", "홍수", "태풍"], "ask": "밖에 날씨는 어떤가요?"}, {"words": ["물", "잠겼", "잠겨", "잠기", "침수", "차오", "넘쳐", "넘치"], "ask": "집 안은 어떤가요?"}]}' AS keywords
          , '무슨 일이 생겼는지 말해주세요.\n예) "비가 많이 와서 집에 물이 차고 있어요"' AS weak_feedback
-         , 30 AS score
+         , 40 AS score
     UNION ALL
     SELECT @flood_id, 2, 'LOCATION', '주소', '주소 말하기'
          , '정확한 주소를 말씀해주시겠어요?'
@@ -164,9 +165,24 @@ SELECT * FROM (
          , '물 때문에 밖으로 못 나가고 있어요.'
          , '["갇혔", "갇혀", "갇힌", "못 나", "못나", "고립", "다쳤", "다친", "다치", "부상", "아파", "아프", "괜찮", "없", "있어", "있습", "있다", "네", "예", "응", "아니", "명", "아무도"]'
          , '갇히거나 다친 사람이 있는지 말해주세요.\n예) "밖으로 못 나가고 있어요", "다친 사람은 없어요"'
-         , 30
+         , 20
 ) AS items
  WHERE NOT EXISTS (SELECT 1
                      FROM call_simulator s
                     WHERE s.call_scenario_id = items.call_scenario_id
                       AND s.item_order = items.item_order);
+
+-- 배점 맞추기 ------------------------------------------------------------------
+-- 위 INSERT 는 이미 있는 질문을 건너뛰므로, 예전 배점(30/40/30)으로 들어간 DB 도
+-- 지금 배점(상황 40 / 주소 40 / 상태 20)이 되도록 맞춘다. 여러 번 실행해도 결과는 같다
+
+UPDATE call_simulator s
+  JOIN call_scenarios c
+    ON c.call_scenario_id = s.call_scenario_id
+   SET s.score = CASE s.item_type
+                   WHEN 'SITUATION' THEN 40
+                   WHEN 'LOCATION'  THEN 40
+                   WHEN 'INJURY'    THEN 20
+                   ELSE s.score
+                 END
+ WHERE c.call_title IN ('화재 신고', '지진 신고', '홍수 신고');

@@ -1,6 +1,7 @@
 package kopo.deundeunbackend.controller;
 
 import kopo.deundeunbackend.common.response.ApiResponse;
+import kopo.deundeunbackend.config.LoginInterceptor;
 import kopo.deundeunbackend.dto.request.AuthRequest;
 import kopo.deundeunbackend.dto.response.LoginResponse;
 import kopo.deundeunbackend.dto.response.UserResponse;
@@ -9,12 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 인증 API. */
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -31,9 +32,8 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ApiResponse<UserResponse> me(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
-        return ApiResponse.ok("로그인 상태입니다.", authService.me(authorization));
+    public ApiResponse<UserResponse> me(@RequestAttribute(LoginInterceptor.USER_ID) Long userId) {
+        return ApiResponse.ok("로그인 상태입니다.", authService.me(userId));
     }
 
     @PostMapping("/logout")

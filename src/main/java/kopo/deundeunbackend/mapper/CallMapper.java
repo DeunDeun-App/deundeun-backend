@@ -8,11 +8,8 @@ import kopo.deundeunbackend.domain.TrainingSession;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-/** 119 신고 연습 시나리오, 세션, 항목별 결과. */
 @Mapper
 public interface CallMapper {
-
-    boolean existsUser(@Param("userId") Long userId);
 
     /**
      * 질문이 하나 이상 있는 시나리오 중 하나를 무작위로 조회

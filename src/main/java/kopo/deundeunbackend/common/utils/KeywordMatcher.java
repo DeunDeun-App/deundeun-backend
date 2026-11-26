@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-// 음성 인식 결과에 통과 키워드가 들어 있는지 판정
 public final class KeywordMatcher {
 
     // 음성 인식은 띄어쓰기와 문장부호가 들쭉날쭉해서 비교 전에 모두 지운다

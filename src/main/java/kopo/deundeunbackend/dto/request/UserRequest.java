@@ -10,7 +10,7 @@ public final class UserRequest {
 
     }
 
-    public record Settings(Boolean shareLocation, Boolean shareResult, Boolean sosAlert) {
+    public record Settings(Boolean shareLocation, Boolean sosAlert) {
 
     }
 }

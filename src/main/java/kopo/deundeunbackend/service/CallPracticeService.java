@@ -22,13 +22,11 @@ import kopo.deundeunbackend.dto.response.CallSessionResponse;
 import kopo.deundeunbackend.mapper.CallMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
-/** 119 신고 연습 업무 로직. */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,8 +43,6 @@ public class CallPracticeService {
 
     private final CallMapper callMapper;
 
-    private final SessionService sessionService;
-
     private final ObjectMapper objectMapper;
 
     /** 사용자가 지금까지 한 말. {@code session_results.detail_json} 에 저장한다. */
@@ -54,20 +50,8 @@ public class CallPracticeService {
 
     }
 
-    /**
-     * 신고 연습 시작
-     *
-     * @param authorization 로그인 토큰 ("Bearer ...")
-     * @return 세션 번호와 상담원 질문 목록
-     */
     @Transactional
-    public CallSessionResponse startSession(String authorization) {
-        Long userId = sessionService.requireUserId(authorization);
-
-        if (!callMapper.existsUser(userId)) {
-            throw ApiException.notFound("USER_NOT_FOUND", "회원 정보를 찾을 수 없습니다.");
-        }
-
+    public CallSessionResponse startSession(Long userId) {
         CallScenario scenario = callMapper.selectRandomScenario();
 
         if (scenario == null) {
@@ -93,17 +77,9 @@ public class CallPracticeService {
                 scenario.getSituationText(), items);
     }
 
-    /**
-     * 상담원 질문에 대한 답변을 판정하고 저장
-     *
-     * @param authorization 로그인 토큰 ("Bearer ...")
-     * @param sessionId     세션 번호
-     * @param request       질문 번호, 음성 인식 결과
-     * @return 판정 결과
-     */
     @Transactional
-    public CallAnswerResponse answer(String authorization, Long sessionId, CallRequest request) {
-        TrainingSession session = requireOpenSession(sessionId, sessionService.requireUserId(authorization));
+    public CallAnswerResponse answer(Long userId, Long sessionId, CallRequest request) {
+        TrainingSession session = requireOpenSession(sessionId, userId);
 
         if (request == null || request.itemId() == null) {
             throw ApiException.badRequest("ITEM_REQUIRED", "질문 정보가 없습니다.");
@@ -147,7 +123,7 @@ public class CallPracticeService {
                     .itemOrder(item.getItemOrder())
                     .score(score)
                     .attempts(1)
-                    .detailJson(writeDetail(null, answer))
+                    .detailJson(writeDetail(answers))
                     .build();
 
             callMapper.insertResult(result);
@@ -155,7 +131,7 @@ public class CallPracticeService {
         } else {
             result.setScore(score);
             result.setAttempts(result.getAttempts() + 1);
-            result.setDetailJson(writeDetail(result.getDetailJson(), answer));
+            result.setDetailJson(writeDetail(answers));
 
             callMapper.updateResult(result);
         }
@@ -199,16 +175,9 @@ public class CallPracticeService {
         return misses < MAX_ATTEMPTS && answers.size() < rule.parts().size() + MAX_ATTEMPTS;
     }
 
-    /**
-     * 신고 연습 종료. 답하지 않은 질문은 실패로 본다
-     *
-     * @param authorization 로그인 토큰 ("Bearer ...")
-     * @param sessionId     세션 번호
-     * @return 총점과 항목별 결과
-     */
     @Transactional
-    public CallResultResponse complete(String authorization, Long sessionId) {
-        TrainingSession session = requireOpenSession(sessionId, sessionService.requireUserId(authorization));
+    public CallResultResponse complete(Long userId, Long sessionId) {
+        TrainingSession session = requireOpenSession(sessionId, userId);
 
         List<CallItem> items = callMapper.selectItemsByScenarioId(session.getCallScenarioId());
         Map<Long, SessionResult> resultByItem = callMapper.selectResultsBySessionId(sessionId)
@@ -219,7 +188,7 @@ public class CallPracticeService {
         boolean weighted = !items.isEmpty() && items.stream().allMatch(item -> item.getScore() != null);
 
         int totalWeight = 0;
-        int passedWeight = 0;
+        float earned = 0;
         List<CallItemResultResponse> results = new ArrayList<>();
 
         for (CallItem item : items) {
@@ -229,14 +198,14 @@ public class CallPracticeService {
 
             totalWeight += weight;
             if (passed) {
-                passedWeight += weight;
+                earned += weight * passedRatio(result.getAttempts());
             }
 
             results.add(new CallItemResultResponse(item.getItemId(), item.getLabel(),
                     item.getStatLabel(), passed));
         }
 
-        int score = totalWeight == 0 ? 0 : Math.round(passedWeight * 100f / totalWeight);
+        int score = totalWeight == 0 ? 0 : Math.round(earned * 100f / totalWeight);
 
         if (callMapper.endSession(sessionId, score) != 1) {
             throw sessionEnded();
@@ -245,6 +214,19 @@ public class CallPracticeService {
         log.info("신고 연습 종료: sessionId={}, score={}", sessionId, score);
 
         return new CallResultResponse(score, results);
+    }
+
+    /**
+     * 통과한 질문의 배점 중 받는 비율. 한 번에 말하면 전부, 되물을수록 줄어든다
+     *
+     * @param attempts 답한 횟수. 1 이면 한 번에 말한 것
+     */
+    static float passedRatio(Integer attempts) {
+        int asked = attempts == null ? 0 : attempts - 1;
+        if (asked <= 0) {
+            return 1f;
+        }
+        return asked == 1 ? 0.7f : 0.4f;
     }
 
     // 다른 회원의 세션은 없는 세션처럼 처리한다
@@ -263,7 +245,7 @@ public class CallPracticeService {
     }
 
     private ApiException sessionEnded() {
-        return new ApiException(HttpStatus.CONFLICT, "SESSION_ENDED", "이미 끝난 신고 연습입니다.");
+        return ApiException.conflict("SESSION_ENDED", "이미 끝난 신고 연습입니다.");
     }
 
     /** 키워드 JSON 을 통과 규칙으로 읽는다. 배열이면 하나라도, {"parts": [...]} 면 모든 단서를 말해야 통과. */
@@ -299,19 +281,7 @@ public class CallPracticeService {
         }
     }
 
-    private String writeDetail(String detailJson, String answer) {
-        List<String> answers = new ArrayList<>();
-
-        if (detailJson != null) {
-            try {
-                answers.addAll(objectMapper.readValue(detailJson, CallDetail.class).answers());
-
-            } catch (JacksonException | NullPointerException e) {
-                log.warn("답변 기록 형식 오류, 새로 기록합니다: {}", detailJson);
-            }
-        }
-        answers.add(answer);
-
+    private String writeDetail(List<String> answers) {
         return objectMapper.writeValueAsString(new CallDetail(answers));
     }
 }

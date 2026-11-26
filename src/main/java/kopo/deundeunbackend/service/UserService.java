@@ -56,7 +56,6 @@ public class UserService {
 
         userMapper.updateSettings(userId,
                 valueOr(request.shareLocation(), user.getIsShareLocation()),
-                valueOr(request.shareResult(), user.getIsShareResult()),
                 valueOr(request.sosAlert(), user.getIsSosAlert()));
 
         return getProfile(userId);
