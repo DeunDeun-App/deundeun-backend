@@ -27,7 +27,6 @@ public class RecordKeyword {
     // 항목별 달성률에 보여줄 이름 (주소 말하기 ...)
     private String statLabel;
 
-    // 못 했을 때 보여줄 피드백
     private String feedback;
 
     private boolean passed;

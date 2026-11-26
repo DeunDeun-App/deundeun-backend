@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-// 모든 컨트롤러에서 발생한 예외를 공통 응답 형태로 변환
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
