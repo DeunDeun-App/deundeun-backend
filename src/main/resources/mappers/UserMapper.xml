@@ -143,6 +143,7 @@
              , created_at
           FROM notifications
          WHERE user_id = #{userId}
+           AND status = 'SENT'
          ORDER BY created_at DESC, noti_id DESC
          LIMIT #{limit}
     </select>
