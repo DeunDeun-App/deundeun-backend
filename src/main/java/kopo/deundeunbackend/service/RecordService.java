@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 홈·기록 화면: 주별 횟수, 이번 주 훈련 시간, 최근 훈련과 키워드, 점수 변화, 항목별 달성률. */
 @Service
 @RequiredArgsConstructor
 public class RecordService {
@@ -43,17 +42,8 @@ public class RecordService {
 
     private final RecordMapper recordMapper;
 
-    private final SessionService sessionService;
-
-    /**
-     * 기록 화면 조회
-     *
-     * @param authorization 로그인 토큰 ("Bearer ...")
-     */
     @Transactional(readOnly = true)
-    public RecordResponse getRecords(String authorization) {
-        Long userId = sessionService.requireUserId(authorization);
-
+    public RecordResponse getRecords(Long userId) {
         LocalDate thisMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate firstMonday = thisMonday.minusWeeks(WEEKS - 1);
 
@@ -87,18 +77,13 @@ public class RecordService {
             dayMinutes.add((int) ((seconds + 59) / 60));
         }
 
-        List<RecordSession> recent = recordMapper.selectSessions(userId, null, RECORD_LIMIT);
-        Map<Long, List<RecordKeyword>> keywordsBySession = recent.isEmpty()
-                ? Map.of()
-                : recordMapper.selectKeywords(userId, recent.stream().map(RecordSession::getSessionId).toList())
-                        .stream()
-                        .collect(Collectors.groupingBy(RecordKeyword::getSessionId));
+        List<RecordKeyword> allKeywords = recordMapper.selectKeywords(userId, null);
+        Map<Long, List<RecordKeyword>> keywordsBySession = allKeywords.stream()
+                .collect(Collectors.groupingBy(RecordKeyword::getSessionId));
 
-        List<RecordResponse.Item> records = recent.stream()
+        List<RecordResponse.Item> records = recordMapper.selectSessions(userId, null, RECORD_LIMIT).stream()
                 .map(session -> toItem(session, keywordsBySession.getOrDefault(session.getSessionId(), List.of())))
                 .toList();
-
-        List<RecordKeyword> allKeywords = recordMapper.selectKeywords(userId, null);
 
         return new RecordResponse(weekLabels, List.of(simulationCounts), List.of(callCounts), dayMinutes, records,
                 report(userId, TrainingSession.TYPE_CALL119, allKeywords),

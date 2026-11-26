@@ -7,7 +7,6 @@ import kopo.deundeunbackend.domain.TrainingSession;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-/** 재난 시뮬레이션 시나리오, 키워드, 결과 저장. */
 @Mapper
 public interface SimulationMapper {
 

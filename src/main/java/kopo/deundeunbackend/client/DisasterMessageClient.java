@@ -32,17 +32,14 @@ public class DisasterMessageClient {
     private final JsonMapper jsonMapper;
     private final RestClient restClient = RestClients.create(Duration.ofSeconds(10));
     private final String serviceKey;
-    private final String region;
 
     private List<DisasterMessage> cache = List.of();
     private Instant cachedAt = Instant.EPOCH;
 
     public DisasterMessageClient(JsonMapper jsonMapper,
-                                 @Value("${deundeun.disaster.service-key:}") String serviceKey,
-                                 @Value("${deundeun.disaster.region:}") String region) {
+                                 @Value("${deundeun.disaster.service-key:}") String serviceKey) {
         this.jsonMapper = jsonMapper;
         this.serviceKey = serviceKey;
-        this.region = region;
     }
 
     public synchronized List<DisasterMessage> fetchRecent(boolean refresh) {
@@ -64,16 +61,15 @@ public class DisasterMessageClient {
     }
 
     private List<DisasterMessage> requestMessages() {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(ENDPOINT)
+        URI uri = UriComponentsBuilder.fromUriString(ENDPOINT)
                 .queryParam("serviceKey", serviceKey)
                 .queryParam("returnType", "json")
                 .queryParam("pageNo", 1)
                 .queryParam("numOfRows", FETCH_ROWS)
-                .queryParam("crtDt", LocalDate.now().minusDays(LOOKBACK_DAYS).format(QUERY_DATE));
-        if (region != null && !region.isBlank()) {
-            builder.queryParam("rgnNm", region);
-        }
-        URI uri = builder.encode().build().toUri();
+                .queryParam("crtDt", LocalDate.now().minusDays(LOOKBACK_DAYS).format(QUERY_DATE))
+                .encode()
+                .build()
+                .toUri();
 
         try {
             String response = restClient.get().uri(uri).retrieve().body(String.class);

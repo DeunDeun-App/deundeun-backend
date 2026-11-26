@@ -43,8 +43,6 @@ public class SosService {
 
     private final UserMapper userMapper;
 
-    private final SessionService sessionService;
-
     private final ObjectMapper objectMapper;
 
     /** 상태 질문 답. {@code sos_events.checklist_json} 에 저장한다. */
@@ -52,29 +50,15 @@ public class SosService {
 
     }
 
-    /**
-     * SOS 를 받을 보호자 조회
-     *
-     * @param authorization 로그인 토큰 ("Bearer ...")
-     * @return 알림을 받는 보호자 목록 (우선순위 순)
-     */
     @Transactional(readOnly = true)
-    public List<GuardianResponse> getGuardians(String authorization) {
-        return requireGuardians(sessionService.requireUserId(authorization)).stream()
+    public List<GuardianResponse> getGuardians(Long userId) {
+        return requireGuardians(userId).stream()
                 .map(GuardianResponse::from)
                 .toList();
     }
 
-    /**
-     * 도움 요청 저장. 보호자마다 대기 상태 알림을 만든다
-     *
-     * @param authorization 로그인 토큰 ("Bearer ...")
-     * @param request       위치, 상태 질문 답, 문자 본문
-     * @return SOS 번호와 문자를 받을 전화번호
-     */
     @Transactional
-    public SosResponse request(String authorization, SosRequest request) {
-        Long userId = sessionService.requireUserId(authorization);
+    public SosResponse request(Long userId, SosRequest request) {
         if (request == null) {
             throw ApiException.badRequest("SITUATION_INVALID", "어떤 일이 생겼는지 골라 주세요.");
         }
@@ -122,15 +106,8 @@ public class SosService {
         return new SosResponse(sosEvent.getSosId(), phones);
     }
 
-    /**
-     * 문자앱으로 넘겼음을 기록. 같은 요청을 여러 번 보내도 처음 시각만 남는다
-     *
-     * @param authorization 로그인 토큰 ("Bearer ...")
-     * @param sosId         SOS 번호
-     */
     @Transactional
-    public void markSent(String authorization, Long sosId) {
-        Long userId = sessionService.requireUserId(authorization);
+    public void markSent(Long userId, Long sosId) {
         SosEvent sosEvent = sosMapper.selectSosEvent(sosId);
 
         // 다른 회원의 요청도 없는 것으로 본다
@@ -142,7 +119,6 @@ public class SosService {
         int updated = sosMapper.updateNotificationsSent(sosId);
         log.info("SOS 문자앱 전달: userId={}, sosId={}, notifications={}", userId, sosId, updated);
     }
-
 
     private List<Guardian> requireGuardians(Long userId) {
         Boolean sosAlert = sosMapper.selectSosAlert(userId);

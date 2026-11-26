@@ -6,7 +6,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 
-// 비밀번호 솔팅/해싱 유틸
 public final class PasswordUtil {
 
     private static final int SALT_BYTE_LENGTH = 16;
@@ -24,7 +23,6 @@ public final class PasswordUtil {
         return HEX.formatHex(salt);
     }
 
-    // 평문 비밀번호를 저장 가능한 해시로 변환
     public static String hash(String rawPassword, String salt) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -37,7 +35,6 @@ public final class PasswordUtil {
         }
     }
 
-    // 입력한 비밀번호가 저장된 해시와 일치하는지 확인
     public static boolean matches(String rawPassword, String salt, String expectedHash) {
         if (rawPassword == null || salt == null || expectedHash == null) {
             return false;

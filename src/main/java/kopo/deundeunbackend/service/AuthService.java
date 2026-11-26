@@ -19,7 +19,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 인증 관련 업무 로직. */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -58,8 +57,8 @@ public class AuthService {
         return new LoginResponse(sessionService.issue(user.getUserId()), UserResponse.from(user));
     }
 
-    public UserResponse me(String authorization) {
-        User user = userMapper.selectByUserId(sessionService.requireUserId(authorization));
+    public UserResponse me(Long userId) {
+        User user = userMapper.selectByUserId(userId);
 
         if (user == null) {
             throw SessionService.sessionExpired();
